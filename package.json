@@ -5,7 +5,8 @@
   "main": "index.ts",
   "scripts": {
     "dev": "nodemon --exec ts-node index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "update-types": "supabase gen types typescript --project-id herpmzopsadglkztsuay > ./types/supabase-types.ts"
   },
   "keywords": [],
   "author": "",

@@ -8,78 +8,108 @@ import { supabase } from "../../lib/supabase";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_SECRET_KEY });
 
 const LogResponse = z.object({
-  userInput: z.string(),
-  aiResponse: z.string(),
-  category: z.enum(["food", "drink", "water", "symptoms"]),
-  symptomDescription: z.string(),
-  foodDescription: z.string(),
+  food: z.object({
+    description: z
+      .string()
+      .describe("The food description and quantity consumed."),
+    calories: z.number(),
+    fat: z.number(),
+    fiber: z.number(),
+    protein: z.number(),
+    vitamins: z.array(
+      z.object({
+        name: z.string(),
+        percentage: z.number(),
+      })
+    ),
+  }),
+  // type: z.enum(["food", "symptom"]),
 });
 
 async function transcribe(fastify: FastifyInstance) {
   fastify.post("/log", async (request, reply) => {
-    try {
-      const token = request.headers.authorization?.replace("Bearer ", "");
-      console.log('token')
-      console.log(token)
+    const token = request.headers.authorization?.replace("Bearer ", "");
 
-      if (!token) {
-        return reply.status(401).send({ error: "Unauthorized: No token provided" });
-      }
-
-
-      const audioFile = await request.file();
-
-      if (!audioFile) {
-        return reply.status(400).send({ error: "No audio file provided" });
-      }
-
-      const buffer = await audioFile.toBuffer();
-
-      const file = new File([buffer], audioFile.filename, {
-        type: audioFile.mimetype,
-      });
-
-      const transcription = await openai.audio.transcriptions.create({
-        file: file,
-        model: "whisper-1",
-      });
-
-      console.log(transcription);
-
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: nutritionExpertPrompt(transcription.text),
-          },
-        ],
-        response_format: zodResponseFormat(LogResponse, "log"),
-      });
-
-      const structuredResponse = JSON.parse(
-        completion.choices[0].message.content as string
-      );
-
-      console.log(structuredResponse)
-
-      const { data: auth } = await supabase.auth.getUser(token);
-
-      const { error } = await supabase.from("log").insert({
-        userInput: transcription.text,
-        aiResponse: structuredResponse.aiResponse,
-        category: structuredResponse.category,
-        symptomDescription: structuredResponse.symptomDescription,
-        foodDescription: structuredResponse.foodDescription,
-        userId: auth?.user?.id,
-      });
-
-      reply.send(structuredResponse.aiResponse);
-      // reply.send(completion.choices[0].message);
-    } catch (error) {
-      console.error("Error transcribing audio:", error);
-      reply.status(500).send({ error: "Failed to transcribe audio" });
+    if (!token) {
+      return reply
+        .status(401)
+        .send({ error: "Unauthorized: No token provided" });
     }
+
+    const audioFile = await request.file();
+
+    if (!audioFile) {
+      return reply.status(400).send({ error: "No audio file provided" });
+    }
+
+    // Converting the audio file to send to WhisperAI
+    const buffer = await audioFile.toBuffer();
+
+    const file = new File([buffer], audioFile.filename, {
+      type: audioFile.mimetype,
+    });
+
+    const transcription = await openai.audio.transcriptions.create({
+      file: file,
+      model: "whisper-1",
+    });
+
+    // Fetching the last 10 messages from the user
+    const { data: auth, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError) {
+      return reply.status(401).send({ error: "Unauthorized: Invalid token" });
+    }
+
+    await supabase.from("log").insert({
+      content: transcription.text,
+      role: "user",
+      user_id: auth.user.id,
+    });
+
+    console.log(auth.user.id);
+
+    const { data: last10LogsDesc } = await supabase
+      .from("log")
+      .select("*")
+      .eq("user_id", auth.user.id)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    const pastLogs = last10LogsDesc?.reverse() || [];
+
+    console.log(pastLogs);
+
+    const pastMessages =
+      pastLogs?.map((log) => ({
+        role: log.role as "user" | "system",
+        content: JSON.stringify(log.content),
+      })) || [];
+
+    // Sending the transcription to OpenAI
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: nutritionExpertPrompt(),
+        },
+        ...pastMessages,
+      ],
+      response_format: zodResponseFormat(LogResponse, "log"),
+    });
+
+    const structuredResponse = JSON.parse(
+      completion.choices[0].message.content as string
+    );
+
+    const { error } = await supabase.from("log").insert({
+      user_id: auth.user.id,
+      role: "system",
+      content: JSON.stringify(structuredResponse),
+    });
+
+    reply.status(200).send(structuredResponse);
   });
 }
 
