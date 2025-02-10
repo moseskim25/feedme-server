@@ -96,20 +96,26 @@ async function transcribe(fastify: FastifyInstance) {
         },
         ...pastMessages,
       ],
-      response_format: zodResponseFormat(LogResponse, "log"),
+      // response_format: zodResponseFormat(LogResponse, "log"),
     });
 
-    const structuredResponse = JSON.parse(
-      completion.choices[0].message.content as string
-    );
+    // const structuredResponse = JSON.parse(
+    //   completion.choices[0].message.content as string
+    // );
 
-    const { error } = await supabase.from("log").insert({
-      user_id: auth.user.id,
-      role: "system",
-      content: JSON.stringify(structuredResponse),
-    });
+    // const { error } = await supabase.from("log").insert({
+    //   user_id: auth.user.id,
+    //   role: "system",
+    //   content: JSON.stringify(structuredResponse),
+    // });
 
-    reply.status(200).send(structuredResponse);
+    // reply.status(200).send(structuredResponse);
+
+    const response = completion.choices[0].message.content;
+
+    console.log(response)
+
+    reply.status(200).send(response);
   });
 }
 
