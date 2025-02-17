@@ -54,20 +54,8 @@ async function transcribe(fastify: FastifyInstance) {
       model: "whisper-1",
     });
 
-    // Fetching the last 10 messages from the user
-    const { data: auth, error: authError } = await supabase.auth.getUser(token);
-
-    if (authError) {
-      return reply.status(401).send({ error: "Unauthorized: Invalid token" });
-    }
-
-    await supabase.from("log").insert({
-      content: transcription.text,
-      role: "user",
-      user_id: auth.user.id,
-    });
-
     
+
 
     // Sending the transcription to OpenAI
     const completion = await openai.chat.completions.create({
