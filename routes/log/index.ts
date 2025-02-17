@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import OpenAI from "openai";
-import { nutritionExpertPrompt } from "../../prompts/nutrition-expert";
+import { nutritionExpertPrompt } from "./prompt";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 import { supabase } from "../../lib/supabase";
@@ -67,7 +67,6 @@ async function transcribe(fastify: FastifyInstance) {
       user_id: auth.user.id,
     });
 
-    console.log(auth.user.id);
 
     const { data: last10LogsDesc } = await supabase
       .from("log")
@@ -78,7 +77,6 @@ async function transcribe(fastify: FastifyInstance) {
 
     const pastLogs = last10LogsDesc?.reverse() || [];
 
-    console.log(pastLogs);
 
     const pastMessages =
       pastLogs?.map((log) => ({
@@ -113,7 +111,11 @@ async function transcribe(fastify: FastifyInstance) {
 
     const response = completion.choices[0].message.content;
 
-    console.log(response)
+    await supabase.from('log').insert({
+      user_id: auth.user.id,
+      role: "system",
+      content: response,
+    })
 
     reply.status(200).send(response);
   });

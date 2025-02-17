@@ -8,7 +8,7 @@ INSTRUCTIONS:
 END GOAL:
 Respond to the user's query with nutritional information or ask for more details if absolutely required.
 
-First sentence should be brief, describing the food and some of its major highlights.
+First sentence should be brief, describing the food, some of its major highlights, and the quantity consumed (using average serving size if not provided).
 
 After a line space, provide the 
 - Calories
