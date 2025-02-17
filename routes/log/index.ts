@@ -67,22 +67,7 @@ async function transcribe(fastify: FastifyInstance) {
       user_id: auth.user.id,
     });
 
-
-    const { data: last10LogsDesc } = await supabase
-      .from("log")
-      .select("*")
-      .eq("user_id", auth.user.id)
-      .order("created_at", { ascending: false })
-      .limit(10);
-
-    const pastLogs = last10LogsDesc?.reverse() || [];
-
-
-    const pastMessages =
-      pastLogs?.map((log) => ({
-        role: log.role as "user" | "system",
-        content: JSON.stringify(log.content),
-      })) || [];
+    
 
     // Sending the transcription to OpenAI
     const completion = await openai.chat.completions.create({
@@ -92,22 +77,9 @@ async function transcribe(fastify: FastifyInstance) {
           role: "system",
           content: nutritionExpertPrompt(),
         },
-        ...pastMessages,
       ],
-      // response_format: zodResponseFormat(LogResponse, "log"),
     });
 
-    // const structuredResponse = JSON.parse(
-    //   completion.choices[0].message.content as string
-    // );
-
-    // const { error } = await supabase.from("log").insert({
-    //   user_id: auth.user.id,
-    //   role: "system",
-    //   content: JSON.stringify(structuredResponse),
-    // });
-
-    // reply.status(200).send(structuredResponse);
 
     const response = completion.choices[0].message.content;
 
