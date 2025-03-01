@@ -17,76 +17,80 @@ export const getLogs = (fastify: FastifyInstance) => {
 };
 
 export async function postLog(fastify: FastifyInstance) {
-  fastify.post("/log", async (request, reply) => {
-    const token = request.headers.authorization?.replace("Bearer ", "");
+  fastify.post(
+    "/log",
+    {
+      schema: {
+        body: { type: "string" },
+      },
+    },
+    async (request, reply) => {
+      const token = request.headers.authorization?.replace("Bearer ", "");
 
-    if (!token) {
-      return reply
-        .status(401)
-        .send({ error: "Unauthorized: No token provided" });
-    }
+      if (!token) {
+        return reply
+          .status(401)
+          .send({ error: "Unauthorized: No token provided" });
+      }
 
-    const audioFile = await request.file();
+      const userMessage = request.body as string;
 
-    if (!audioFile) {
-      return reply.status(400).send({ error: "No audio file provided" });
-    }
+      const response = await analyzeWithPerplexity(userMessage);
 
-    const transcribedText = await whisperTranscribeAudio(audioFile);
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_SECRET_KEY });
 
-    const response = await analyzeWithPerplexity(transcribedText);
+      const completion = await openai.beta.chat.completions.parse({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: extractDetailsFromLogPrompt },
+          {
+            role: "user",
+            content: userMessage,
+          },
+        ],
+        response_format: zodResponseFormat(
+          z.object({
+            descriptions: z.array(z.string()),
+          }),
+          "foods"
+        ),
+      });
 
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_SECRET_KEY });
+      const foods = completion.choices[0].message.parsed;
 
-    const completion = await openai.beta.chat.completions.parse({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: extractDetailsFromLogPrompt },
-        {
-          role: "user",
-          content: transcribedText,
-        },
-      ],
-      response_format: zodResponseFormat(
-        z.object({
-          descriptions: z.array(z.string()),
-        }),
-        "foods"
-      ),
-    });
-
-    const foods = completion.choices[0].message.parsed;
-
-    const { data: auth, error: authError } = await supabase.auth.getUser(token);
-
-    if (authError) {
-      return reply.status(401).send({ error: "Unauthorized: Invalid token" });
-    }
-
-    const log = await supabase
-      .from("log")
-      .insert({
-        user_id: auth.user.id,
-        role: "system",
-        content: response,
-      })
-      .select("*")
-      .single();
-
-    if (log.error) {
-      return reply.status(500).send({ error: "Error inserting log" });
-    }
-
-    if (foods && foods?.descriptions.length > 0) {
-      await supabase.from("log_item").insert(
-        foods.descriptions.map((description) => ({
-          log_id: log.data.id,
-          type: "food",
-          description,
-        }))
+      const { data: auth, error: authError } = await supabase.auth.getUser(
+        token
       );
-    }
 
-    reply.status(200).send(response);
-  });
+      if (authError) {
+        return reply.status(401).send({ error: "Unauthorized: Invalid token" });
+      }
+
+      const log = await supabase
+        .from("log")
+        .insert({
+          user_id: auth.user.id,
+          role: "system",
+          content: response,
+        })
+        .select("*")
+        .single();
+
+      if (log.error) {
+        return reply.status(500).send({ error: "Error inserting log" });
+      }
+
+      if (foods && foods?.descriptions.length > 0) {
+        await supabase.from("log_item").insert(
+          foods.descriptions.map((description) => ({
+            log_id: log.data.id,
+            type: "food",
+            description,
+          }))
+        );
+      }
+
+      reply.status(200).send(response);
+    }
+  );
 }

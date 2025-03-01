@@ -19,7 +19,7 @@ export const analyzeWithPerplexity = async (text: string) => {
         content: text,
       },
     ],
-    max_tokens: 200,
+    // max_tokens: 200,
     temperature: 0.2,
     top_p: 0.9,
     search_domain_filter: null,
@@ -66,4 +66,3 @@ export const extractDetailsFromLog = async (log: string) => {
 
   return completion.choices[0].message.content;
 };
-
