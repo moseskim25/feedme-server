@@ -2,11 +2,10 @@ import Fastify from "fastify";
 import "dotenv/config";
 
 // Routes
-import mealRoutes from "./routes/meal";
-import logFood from "./routes/log-food";
-import log from "./routes/log";
+import { getLogs, postLog } from "./routes/log";
 import fastifyMultipart from "@fastify/multipart";
 import fastifyCors from "@fastify/cors";
+import { transcribeAudio } from "./routes/transcribe";
 
 // const fastify = Fastify({
 //   logger: true
@@ -31,13 +30,9 @@ fastify.register(fastifyCors, {
   origin: true, // or specify the allowed origins
 });
 
-fastify.get("/", function (request, reply) {
-  reply.send({ hello: "world" });
-});
-
-fastify.register(mealRoutes);
-fastify.register(logFood);
-fastify.register(log);
+fastify.register(postLog);
+fastify.register(getLogs);
+fastify.register(transcribeAudio)
 
 fastify.listen({ port: 3001 }, function (err, address) {
   if (err) {

@@ -33,6 +33,38 @@ export type Database = {
         }
         Relationships: []
       }
+      log_item: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: number
+          log_id: number | null
+          type: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: number
+          log_id?: number | null
+          type?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: number
+          log_id?: number | null
+          type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "log_food_log_id_fkey"
+            columns: ["log_id"]
+            isOneToOne: false
+            referencedRelation: "log"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatarUrl: string | null

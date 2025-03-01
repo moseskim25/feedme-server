@@ -1,32 +1,22 @@
 import { FastifyInstance } from "fastify";
 import OpenAI from "openai";
-import { nutritionExpertPrompt } from "./prompt";
+import { extractDetailsFromLogPrompt, nutritionExpertPrompt } from "./prompt";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "@/lib/supabase";
+import { analyzeWithPerplexity, extractDetailsFromLog } from "./helper";
+import { whisperTranscribeAudio } from "../transcribe";
+import { supabaseInsertLogItem } from "@/supabase/log-item";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_SECRET_KEY });
+export const getLogs = (fastify: FastifyInstance) => {
+  fastify.get("/logs", async (request, reply) => {
+    const logs = await supabase.from("log").select("*");
 
-const LogResponse = z.object({
-  food: z.object({
-    description: z
-      .string()
-      .describe("The food description and quantity consumed."),
-    calories: z.number(),
-    fat: z.number(),
-    fiber: z.number(),
-    protein: z.number(),
-    vitamins: z.array(
-      z.object({
-        name: z.string(),
-        percentage: z.number(),
-      })
-    ),
-  }),
-  // type: z.enum(["food", "symptom"]),
-});
+    reply.status(200).send(logs);
+  });
+};
 
-async function transcribe(fastify: FastifyInstance) {
+export async function postLog(fastify: FastifyInstance) {
   fastify.post("/log", async (request, reply) => {
     const token = request.headers.authorization?.replace("Bearer ", "");
 
@@ -42,43 +32,61 @@ async function transcribe(fastify: FastifyInstance) {
       return reply.status(400).send({ error: "No audio file provided" });
     }
 
-    // Converting the audio file to send to WhisperAI
-    const buffer = await audioFile.toBuffer();
+    const transcribedText = await whisperTranscribeAudio(audioFile);
 
-    const file = new File([buffer], audioFile.filename, {
-      type: audioFile.mimetype,
-    });
+    const response = await analyzeWithPerplexity(transcribedText);
 
-    const transcription = await openai.audio.transcriptions.create({
-      file: file,
-      model: "whisper-1",
-    });
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_SECRET_KEY });
 
-    
-
-
-    // Sending the transcription to OpenAI
-    const completion = await openai.chat.completions.create({
+    const completion = await openai.beta.chat.completions.parse({
       model: "gpt-4o",
       messages: [
+        { role: "system", content: extractDetailsFromLogPrompt },
         {
-          role: "system",
-          content: nutritionExpertPrompt(),
+          role: "user",
+          content: transcribedText,
         },
       ],
+      response_format: zodResponseFormat(
+        z.object({
+          descriptions: z.array(z.string()),
+        }),
+        "foods"
+      ),
     });
 
+    const foods = completion.choices[0].message.parsed;
 
-    const response = completion.choices[0].message.content;
+    const { data: auth, error: authError } = await supabase.auth.getUser(token);
 
-    await supabase.from('log').insert({
-      user_id: auth.user.id,
-      role: "system",
-      content: response,
-    })
+    if (authError) {
+      return reply.status(401).send({ error: "Unauthorized: Invalid token" });
+    }
+
+    const log = await supabase
+      .from("log")
+      .insert({
+        user_id: auth.user.id,
+        role: "system",
+        content: response,
+      })
+      .select("*")
+      .single();
+
+    if (log.error) {
+      return reply.status(500).send({ error: "Error inserting log" });
+    }
+
+    if (foods && foods?.descriptions.length > 0) {
+      await supabase.from("log_item").insert(
+        foods.descriptions.map((description) => ({
+          log_id: log.data.id,
+          type: "food",
+          description,
+        }))
+      );
+    }
 
     reply.status(200).send(response);
   });
 }
-
-export default transcribe;
