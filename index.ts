@@ -1,11 +1,14 @@
+import "module-alias/register";
+
 import Fastify from "fastify";
 import "dotenv/config";
+import "tsconfig-paths/register";
 
 // Routes
-import { getLogs, postLog } from "./routes/log/index.ts";
+import { getLogs, postLog } from "./routes/log/index";
 import fastifyMultipart from "@fastify/multipart";
 import fastifyCors from "@fastify/cors";
-import { transcribeAudio } from "./routes/transcribe/index.ts";
+import { transcribeAudio } from "./routes/transcribe/index";
 
 // const fastify = Fastify({
 //   logger: true
@@ -32,7 +35,7 @@ fastify.register(fastifyCors, {
 
 fastify.register(postLog);
 fastify.register(getLogs);
-fastify.register(transcribeAudio)
+fastify.register(transcribeAudio);
 
 fastify.listen({ port: 3001 }, function (err, address) {
   if (err) {
