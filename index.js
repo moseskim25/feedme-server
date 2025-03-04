@@ -2,10 +2,10 @@ import Fastify from "fastify";
 import "dotenv/config";
 
 // Routes
-import { getLogs, postLog } from "./routes/log";
+import { getLogs, postLog } from "./routes/log/index.ts";
 import fastifyMultipart from "@fastify/multipart";
 import fastifyCors from "@fastify/cors";
-import { transcribeAudio } from "./routes/transcribe";
+import { transcribeAudio } from "./routes/transcribe/index.ts";
 
 // const fastify = Fastify({
 //   logger: true
