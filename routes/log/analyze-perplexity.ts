@@ -1,6 +1,6 @@
 export const analyzeWithPerplexity = async (text: string) => {
   const body = {
-    model: "sonar-reasoning",
+    model: "sonar",
     messages: [
       {
         role: "system",
@@ -38,7 +38,7 @@ export const nutritionExpertPrompt =
 STEPS:
 1. From the conversation, infer what food item(s) the user is referring to.
 2. If a brand is specified, check online for nutritional information, otherwise, do with what you can find. Be mindful of the serving sizes.
-4. Provide the user with the following information, inferring the values from an average serving size or single unit if the user didn't specify. Don't just default to 100g.
+4. Provide the user with the following information:
 - Total calories and calories from each food item.
 - Total fat, fiber, and protein in grams. 
 - Main vitamins and minerals in their respective metrics + the daily value percentages of each. Include all nutritions above 5% DV. Some important vitamins and minerals include Vitamin A, Vitamin C, Calcium, Iron, Potassium.
@@ -65,4 +65,5 @@ NARROWING:
 - Don't mention that the nutritional content can vary. Just provide values.
 - Don't use words like approximately - they know it's an estimate.
 - Keep it concise.
+- Use the measurement of one single unit as the portion size or the average serving size of the dish if the user didn't specify. Do NOT use 100g as the default.
 `;
