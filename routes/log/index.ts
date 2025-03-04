@@ -1,12 +1,15 @@
 import { FastifyInstance } from "fastify";
 import OpenAI from "openai";
-import { extractDetailsFromLogPrompt, nutritionExpertPrompt } from "./prompt";
+import { extractDetailsFromLogPrompt } from "./prompt";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 import { supabase } from "@/lib/supabase";
-import { analyzeWithPerplexity, extractDetailsFromLog } from "./helper";
+import { extractDetailsFromLog } from "./helper";
 import { whisperTranscribeAudio } from "../transcribe";
 import { supabaseInsertLogItem } from "@/supabase/log-item";
+import { analyzeWithPerplexity } from "./analyze-perplexity";
+import { analyzeOpenAI } from "./analyze-openai";
+import { analyzeGemini } from "./analyze-gemini";
 
 export const getLogs = (fastify: FastifyInstance) => {
   fastify.get("/logs", async (request, reply) => {
@@ -35,7 +38,10 @@ export async function postLog(fastify: FastifyInstance) {
 
       const userMessage = request.body as string;
 
-      const response = await analyzeWithPerplexity(userMessage);
+      // const response = await analyzeWithPerplexity(userMessage);
+      // const test = await analyzeOpenAI(userMessage);
+
+      const response = await analyzeGemini(userMessage);
 
       const openai = new OpenAI({ apiKey: process.env.OPENAI_SECRET_KEY });
 
