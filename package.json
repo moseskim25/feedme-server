@@ -4,8 +4,7 @@
   "description": "",
   "main": "index.ts",
   "scripts": {
-    "build": "npx tsc",
-    "start": "node index.ts",
+    "start": "node index.js",
     "dev": "nodemon --exec ts-node index.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
     "update-types": "supabase gen types typescript --project-id herpmzopsadglkztsuay > ./types/supabase-types.ts"
@@ -32,7 +31,6 @@
   "devDependencies": {
     "@types/node": "^22.5.4",
     "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.6.2"
+    "tsconfig-paths": "^4.2.0"
   }
 }
