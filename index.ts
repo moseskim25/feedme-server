@@ -5,7 +5,7 @@ import "dotenv/config";
 import "tsconfig-paths/register";
 
 // Routes
-import { getLogs, postLog } from "./routes/log/index";
+import { postMessage } from "./routes/message/index";
 import fastifyMultipart from "@fastify/multipart";
 import fastifyCors from "@fastify/cors";
 import { transcribeAudio } from "./routes/transcribe/index";
@@ -33,8 +33,7 @@ fastify.register(fastifyCors, {
   origin: true, // or specify the allowed origins
 });
 
-fastify.register(postLog);
-fastify.register(getLogs);
+fastify.register(postMessage);
 fastify.register(transcribeAudio);
 
 const PORT = Number(process.env.PORT) || 3001;

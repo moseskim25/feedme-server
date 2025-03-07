@@ -2,13 +2,12 @@ import { supabase } from "@/lib/supabase";
 import { Tables } from "@/types/supabase-types";
 
 export const supabaseInsertLogItem = async (
-  logId: Tables<"log_item">["log_id"],
-  description: Tables<"log_item">["description"]
+  userId: Tables<"user">["id"],
+  description: Tables<"food">["description"]
 ) => {
-  const { error } = await supabase.from("log_item").insert({
-    log_id: logId,
-    type: "food",
+  const { error } = await supabase.from("food").insert({
     description,
+    user_id: userId,
   });
 
   if (error) {

@@ -9,61 +9,96 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      log: {
+      food: {
         Row: {
-          content: Json
+          created_at: string
+          description: string | null
+          id: number
+          type: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: number
+          type?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: number
+          type?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "food_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      log_item_nutrition: {
+        Row: {
+          amount: number | null
+          created_at: string
+          id: number
+          log_item_id: number | null
+          metric: string | null
+          name: string | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          id?: number
+          log_item_id?: number | null
+          metric?: string | null
+          name?: string | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          id?: number
+          log_item_id?: number | null
+          metric?: string | null
+          name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "log_item_nutrition_log_item_id_fkey"
+            columns: ["log_item_id"]
+            isOneToOne: false
+            referencedRelation: "food"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message: {
+        Row: {
+          content: string
           created_at: string
           id: number
           role: string | null
           user_id: string | null
         }
         Insert: {
-          content: Json
+          content: string
           created_at?: string
           id?: number
           role?: string | null
           user_id?: string | null
         }
         Update: {
-          content?: Json
+          content?: string
           created_at?: string
           id?: number
           role?: string | null
           user_id?: string | null
         }
         Relationships: []
-      }
-      log_item: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: number
-          log_id: number | null
-          type: string | null
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: number
-          log_id?: number | null
-          type?: string | null
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: number
-          log_id?: number | null
-          type?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "log_food_log_id_fkey"
-            columns: ["log_id"]
-            isOneToOne: false
-            referencedRelation: "log"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       profiles: {
         Row: {
