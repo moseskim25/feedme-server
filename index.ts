@@ -8,7 +8,8 @@ import "tsconfig-paths/register";
 import { postMessage } from "./routes/message/index";
 import fastifyMultipart from "@fastify/multipart";
 import fastifyCors from "@fastify/cors";
-import { transcribeAudio } from "./routes/transcribe/index";
+import { transcribe } from "./routes/transcribe/index";
+import { postEntry } from "./routes/entry/index";
 
 // const fastify = Fastify({
 //   logger: true
@@ -34,8 +35,8 @@ fastify.register(fastifyCors, {
 });
 
 fastify.register(postMessage);
-fastify.register(transcribeAudio);
-
+fastify.register(transcribe);
+fastify.register(postEntry);
 const PORT = Number(process.env.PORT) || 3001;
 
 fastify.listen({ port: PORT, host: "0.0.0.0" }, function (err, address) {

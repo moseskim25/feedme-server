@@ -1,4 +1,4 @@
-import { nutritionExpertPrompt } from "./analyze-perplexity";
+import { aiPrompt } from "./prompt";
 
 export const analyzeGemini = async (text: string) => {
   const { GoogleGenerativeAI } = require("@google/generative-ai");
@@ -6,7 +6,7 @@ export const analyzeGemini = async (text: string) => {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-  const prompt = `${nutritionExpertPrompt()}\nUser message: ${text}`;
+  const prompt = aiPrompt();
 
   const result = await model.generateContent(prompt);
   const response = result.response.text();

@@ -5,7 +5,8 @@ import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 import { supabase } from "@/lib/supabase";
 import { analyzeGemini } from "./analyze-gemini";
-import { supabaseInsertMessage } from "@/supabase/message";
+
+import { analyzeWithPerplexity } from "./analyze-perplexity";
 
 export async function postMessage(fastify: FastifyInstance) {
   fastify.post(
@@ -41,13 +42,13 @@ export async function postMessage(fastify: FastifyInstance) {
       });
 
       // const response = await analyzeWithPerplexity(userMessage);
-      // const test = await analyzeOpenAI(userMessage);
-      const response = await analyzeGemini(userMessage);
+      const response = await analyzeOpenAI(userMessage);
+      // const response = await analyzeGemini(userMessage);
 
       supabaseInsertMessage({
         user_id: auth.user.id,
         role: "system",
-        content: response,
+        content: response ?? "",
       });
 
       const openai = new OpenAI({ apiKey: process.env.OPENAI_SECRET_KEY });
@@ -60,17 +61,15 @@ export async function postMessage(fastify: FastifyInstance) {
             content: `You are a helpful AI assistant. The current time is ${new Date()}.
 
 Rules:
-- Provide only the final answer. It is important that you do not include any explanation on the steps below.
-- Do not show the intermediate steps information.
-- Don't increase the word count by providing unnecessary information. Keep the response concise and to the point.
-
-Outcome:
-Based on the user's log, extract the following:
-- A description of the food item including the serving size.
-- The date in yyyy-mm-dd format for when they ate the food. Use the current day unless the user specified otherwise. For example, if they said last night, then you should use yesterday's date.
-- The time in HH:MM for when they ate the food. Use the current time unless they gave a generic time like morning, afternoon, evening, or night.
-- If the time was not provided, provide the time of day (morning, afternoon, evening, night, etc). Otherwise leave this field blank.
-- The time zone is EST.`,
+1. The user will provide a message about something they ate, drank, or felt (symptom).
+2. Extract the following information from the user's message:
+  - The type of message: food or symptom.
+  - A description of the food item, including the serving size.
+  - The date in yyyy-mm-dd format for when they ate the food. Use the current day unless the user specified otherwise. For example, if they said "last night," then you should use yesterday's date.
+  - The time in HH:mm for when they ate the food. Use the current time unless they gave a generic time like "morning," "afternoon," "evening," or "night."
+  - If the time was not provided, provide the time of day (morning, afternoon, evening, night, etc.). Otherwise, leave this field blank.
+  - The time zone is EST.
+`,
           },
           {
             role: "user",
@@ -81,6 +80,7 @@ Based on the user's log, extract the following:
           z.object({
             foods: z.array(
               z.object({
+                type: z.string(),
                 description: z.string(),
                 date: z.string(),
                 time: z.string(),
@@ -103,6 +103,7 @@ Based on the user's log, extract the following:
         for (const food of chatCompletion.foods) {
           foods.push({
             user_id: auth.user.id,
+            type: food.type,
             description: food.description,
             date: food.date,
             time: food.time || null,

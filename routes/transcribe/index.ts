@@ -2,7 +2,7 @@ import { MultipartFile } from "@fastify/multipart";
 import { FastifyInstance } from "fastify";
 import OpenAI from "openai";
 
-export const transcribeAudio = async (fastify: FastifyInstance) => {
+export const transcribe = async (fastify: FastifyInstance) => {
   fastify.post("/transcribe", async (request, reply) => {
     const audioFile = await request.file();
 
@@ -10,13 +10,15 @@ export const transcribeAudio = async (fastify: FastifyInstance) => {
       return reply.status(400).send({ error: "No audio file provided" });
     }
 
-    const transcribedText = await whisperTranscribeAudio(audioFile);
+    const transcribedText = await transcribeAudioUsingWhisperAI(audioFile);
 
     reply.status(200).send(transcribedText);
   });
 };
 
-export const whisperTranscribeAudio = async (audioFile: MultipartFile) => {
+export const transcribeAudioUsingWhisperAI = async (
+  audioFile: MultipartFile
+) => {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_SECRET_KEY });
 
   const buffer = await audioFile.toBuffer();
