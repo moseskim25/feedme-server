@@ -1,12 +1,13 @@
 import { supabase } from "@/lib/supabase";
-import { TablesInsert } from "@/types/supabase-types";
+import { TablesInsert } from "@/types/supabase.types";
 
-export const recordMessageInSupabase = async (
+export const insertMessageInSupabase = async (
   payload: TablesInsert<"message">
 ) => {
   const { error } = await supabase.from("message").insert(payload);
 
   if (error) {
-    throw new Error(`recordMessageInSupabase: ${error.message}`);
+    console.error(error);
+    throw new Error(`insertMessageInSupabase: ${error.message}`);
   }
 };

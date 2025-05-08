@@ -5,11 +5,10 @@ import "dotenv/config";
 import "tsconfig-paths/register";
 
 // Routes
-import { postMessage } from "./routes/message/index";
 import fastifyMultipart from "@fastify/multipart";
 import fastifyCors from "@fastify/cors";
 import { transcribe } from "./routes/transcribe/index";
-import { postEntry } from "./routes/entry/index";
+import { generateSummary } from "./routes/summary";
 
 // const fastify = Fastify({
 //   logger: true
@@ -31,12 +30,12 @@ const fastify = Fastify({
 fastify.register(fastifyMultipart);
 
 fastify.register(fastifyCors, {
-  origin: true, // or specify the allowed origins
+  origin: true,
 });
 
-fastify.register(postMessage);
 fastify.register(transcribe);
-fastify.register(postEntry);
+fastify.register(generateSummary);
+
 const PORT = Number(process.env.PORT) || 3001;
 
 fastify.listen({ port: PORT, host: "0.0.0.0" }, function (err, address) {
