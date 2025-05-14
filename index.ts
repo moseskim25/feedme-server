@@ -1,5 +1,5 @@
 import "module-alias/register";
-
+import { setupGracefulShutdown } from "./lib/db-shutdown";
 import Fastify from "fastify";
 import "dotenv/config";
 import "tsconfig-paths/register";
@@ -8,7 +8,16 @@ import "tsconfig-paths/register";
 import fastifyMultipart from "@fastify/multipart";
 import fastifyCors from "@fastify/cors";
 import { transcribe } from "./routes/transcribe/index";
-import { generateSummary } from "./routes/summary";
+import { generateAnalysis, getAnalysis } from "./routes/analysis";
+import { getAnalysisStatus } from "./routes/analysis/status";
+import { authMiddleware } from "./lib/auth";
+
+// Custom type declaration for request
+declare module "fastify" {
+  interface FastifyRequest {
+    userId?: string;
+  }
+}
 
 // const fastify = Fastify({
 //   logger: true
@@ -33,8 +42,18 @@ fastify.register(fastifyCors, {
   origin: true,
 });
 
+// Middleware
+fastify.addHook("preHandler", authMiddleware());
+
+// Transcribe
 fastify.register(transcribe);
-fastify.register(generateSummary);
+
+// Analysis
+fastify.register(generateAnalysis);
+fastify.register(getAnalysis);
+
+// Analysis Status
+fastify.register(getAnalysisStatus);
 
 const PORT = Number(process.env.PORT) || 3001;
 
@@ -44,3 +63,5 @@ fastify.listen({ port: PORT, host: "0.0.0.0" }, function (err, address) {
     process.exit(1);
   }
 });
+
+setupGracefulShutdown(fastify);

@@ -9,6 +9,47 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      analysis: {
+        Row: {
+          created_at: string
+          feedback: string | null
+          id: number
+          image_prompt: string | null
+          image_url: string | null
+          is_uptodate: boolean | null
+          logical_date: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          feedback?: string | null
+          id?: number
+          image_prompt?: string | null
+          image_url?: string | null
+          is_uptodate?: boolean | null
+          logical_date?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          feedback?: string | null
+          id?: number
+          image_prompt?: string | null
+          image_url?: string | null
+          is_uptodate?: boolean | null
+          logical_date?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "summary_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message: {
         Row: {
           content: string
@@ -35,44 +76,6 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
-      }
-      summary: {
-        Row: {
-          created_at: string
-          feedback: string | null
-          id: number
-          image_prompt: string | null
-          image_url: string | null
-          logical_date: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          feedback?: string | null
-          id?: number
-          image_prompt?: string | null
-          image_url?: string | null
-          logical_date?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          feedback?: string | null
-          id?: number
-          image_prompt?: string | null
-          image_url?: string | null
-          logical_date?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "summary_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       user: {
         Row: {

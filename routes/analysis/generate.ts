@@ -4,12 +4,12 @@ import { FastifyInstance } from "fastify";
 import { getCurrentTime } from "@/lib/utils/date.utils";
 import { uploadToR2 } from "@/lib/r2";
 
-export async function generateSummary(fastify: FastifyInstance) {
-  fastify.get<{
-    Querystring: {
+export async function generateAnalysis(fastify: FastifyInstance) {
+  fastify.post<{
+    Body: {
       logicalDate: string;
     };
-  }>("/summary", async (request, reply) => {
+  }>("/analysis", async (request, reply) => {
     // Validate token
     const token = request.headers.authorization?.replace("Bearer ", "");
     if (!token) {
@@ -31,8 +31,8 @@ export async function generateSummary(fastify: FastifyInstance) {
         .send({ error: "Unauthorized: No user ID provided" });
     }
 
-    // Query params
-    const logicalDate = request.query.logicalDate;
+    // Request body
+    const logicalDate = request.body.logicalDate;
 
     // Get messages from supabase for the given date
     const messagesQuery = await supabase
@@ -61,7 +61,7 @@ export async function generateSummary(fastify: FastifyInstance) {
         ...messages,
         {
           role: "user",
-          content: `Based on this conversation, provide feedback on my diet keeping in mind the time of day is ${getCurrentTime()}. Keep it relatively short and concise. Try to be organized in how you communicate.`,
+          content: `Based on this conversation, provide feedback on my diet keeping in mind the time of day is ${getCurrentTime()}. Keep it relatively short and concise. Your response should be in one paragraph.`,
         },
       ],
     });
@@ -76,18 +76,33 @@ export async function generateSummary(fastify: FastifyInstance) {
         ...messages,
         {
           role: "user",
-          content: `Based on this conversation, create a list of foods I ate. Include the quantity and a description of each item. Don't use any formatting, just a list separated by commas.`,
+          content: `Based on this conversation, create a list of foods I ate. Include the quantity and a description of each item, using a quantity of 1 if it's not specified. Return it in a numbered list. Don't include any other text.`,
         },
       ],
     });
 
-    const imagePrompt = imagePromptChatCompletion.choices[0].message.content;
+    const imagePromptChatCompletionContent =
+      imagePromptChatCompletion.choices[0].message.content;
 
-    console.log(imagePrompt);
+    console.log(imagePromptChatCompletionContent);
+
+    const imagePrompt = `Please put the following foods on a dinner table in birds eye view. The proportions and quantities are important. Do not cut off any of the foods at the edges of the image. The foods are: ${imagePromptChatCompletionContent}.`;
+
+    let { data: analysis, count: versionCount } = await supabase
+      .from("analysis")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("logical_date", logicalDate);
+
+    if (!versionCount || versionCount === 0) {
+      versionCount = 1;
+    }
+
+    console.log(analysis);
 
     const image = await openai.images.generate({
       model: "gpt-image-1",
-      prompt: imagePrompt || "",
+      prompt: imagePrompt,
       n: 1,
       size: "1024x1024",
     });
@@ -100,15 +115,15 @@ export async function generateSummary(fastify: FastifyInstance) {
 
       const imageUrl = await uploadToR2(
         imageBytes,
-        `${userId}/${logicalDate}.png`
+        `${userId}/${logicalDate}-${versionCount + 1}.png`
       );
 
       console.log(imageUrl);
 
-      const insertSummaryQuery = await supabase.from("summary").insert({
+      const insertSummaryQuery = await supabase.from("analysis").insert({
         user_id: userId,
         logical_date: logicalDate,
-        image_url: `${userId}/${logicalDate}.png`,
+        image_url: `${userId}/${logicalDate}-${versionCount + 1}.png`,
         image_prompt: imagePrompt,
         feedback: feedbackChatCompletionResponse,
       });
