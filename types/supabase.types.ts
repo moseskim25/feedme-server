@@ -12,33 +12,33 @@ export type Database = {
       analysis: {
         Row: {
           created_at: string
-          feedback: string | null
+          feedback: string
           id: number
-          image_prompt: string | null
-          image_url: string | null
-          is_uptodate: boolean | null
-          logical_date: string | null
-          user_id: string | null
+          image_prompt: string
+          image_url: string
+          is_processed: boolean | null
+          logical_date: string
+          user_id: string
         }
         Insert: {
           created_at?: string
-          feedback?: string | null
+          feedback: string
           id?: number
-          image_prompt?: string | null
-          image_url?: string | null
-          is_uptodate?: boolean | null
-          logical_date?: string | null
-          user_id?: string | null
+          image_prompt: string
+          image_url: string
+          is_processed?: boolean | null
+          logical_date: string
+          user_id: string
         }
         Update: {
           created_at?: string
-          feedback?: string | null
+          feedback?: string
           id?: number
-          image_prompt?: string | null
-          image_url?: string | null
-          is_uptodate?: boolean | null
-          logical_date?: string | null
-          user_id?: string | null
+          image_prompt?: string
+          image_url?: string
+          is_processed?: boolean | null
+          logical_date?: string
+          user_id?: string
         }
         Relationships: [
           {
@@ -55,6 +55,7 @@ export type Database = {
           content: string
           created_at: string
           id: number
+          is_processed: boolean
           logical_date: string | null
           role: string
           user_id: string | null
@@ -63,6 +64,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: number
+          is_processed?: boolean
           logical_date?: string | null
           role: string
           user_id?: string | null
@@ -71,6 +73,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: number
+          is_processed?: boolean
           logical_date?: string | null
           role?: string
           user_id?: string | null

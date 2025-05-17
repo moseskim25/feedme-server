@@ -1,8 +1,19 @@
 import { openai } from "@/lib/openai";
-import { createSupabaseClient } from "@/lib/supabase";
+import { createSupabaseClient, supabase } from "@/lib/supabase";
 import { FastifyInstance } from "fastify";
 import { getCurrentTime } from "@/lib/utils/date.utils";
 import { uploadToR2 } from "@/lib/r2";
+import {
+  getMessagesForDate,
+  markMessagesAsProcessed,
+  insertAnalysisToSupabase,
+  getAnalysisVersionNumber,
+  generateFeedbackUsingOpenAI,
+  generateListOfFoodsUsingOpenAI,
+  generateImageUsingOpenAI,
+  uploadImageToR2,
+} from "./generate-helper";
+import { insertAnalysisInSupabase } from "@/supabase/analysis";
 
 export async function generateAnalysis(fastify: FastifyInstance) {
   fastify.post<{
@@ -10,129 +21,68 @@ export async function generateAnalysis(fastify: FastifyInstance) {
       logicalDate: string;
     };
   }>("/analysis", async (request, reply) => {
-    // Validate token
-    const token = request.headers.authorization?.replace("Bearer ", "");
-    if (!token) {
-      return reply
-        .status(401)
-        .send({ error: "Unauthorized: No token provided" });
-    }
+    try {
+      const userId = request.userId;
+      const authToken = request.authToken;
 
-    const supabase = createSupabaseClient(token);
+      if (!userId || !authToken) {
+        return reply.status(401).send({ error: "Unauthorized" });
+      }
 
-    // Get user ID from token
-    const authQuery = await supabase.auth.getUser();
+      const supabase = createSupabaseClient(authToken);
 
-    const userId = authQuery.data.user?.id;
+      const logicalDate = request.body.logicalDate;
 
-    if (!userId) {
-      return reply
-        .status(401)
-        .send({ error: "Unauthorized: No user ID provided" });
-    }
+      const messages = await getMessagesForDate(userId, logicalDate);
 
-    // Request body
-    const logicalDate = request.body.logicalDate;
+      const formattedMessages = messages.map((message) => ({
+        role: message.role as "user" | "system",
+        content: message.content,
+      }));
 
-    // Get messages from supabase for the given date
-    const messagesQuery = await supabase
-      .from("message")
-      .select("*")
-      .eq("user_id", userId)
-      .eq("logical_date", logicalDate);
-
-    if (!messagesQuery.data || messagesQuery.data.length === 0) {
-      return { error: "No messages found for this date" };
-    }
-
-    // Format the messages for the OpenAI API
-    const messages = messagesQuery.data.map((message) => ({
-      role: message.role as "user" | "system",
-      content: message.content,
-    }));
-
-    console.log(messages);
-
-    // Have OpenAI analyze the messages and provide feedback
-    console.log(getCurrentTime());
-    const feedbackChatCompletion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        ...messages,
-        {
-          role: "user",
-          content: `Based on this conversation, provide feedback on my diet keeping in mind the time of day is ${getCurrentTime()}. Keep it relatively short and concise. Your response should be in one paragraph.`,
-        },
-      ],
-    });
-
-    const feedbackChatCompletionResponse =
-      feedbackChatCompletion.choices[0].message.content;
-
-    // Generate an image of what the user ate. Starting with generating a prompt
-    const imagePromptChatCompletion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        ...messages,
-        {
-          role: "user",
-          content: `Based on this conversation, create a list of foods I ate. Include the quantity and a description of each item, using a quantity of 1 if it's not specified. Return it in a numbered list. Don't include any other text.`,
-        },
-      ],
-    });
-
-    const imagePromptChatCompletionContent =
-      imagePromptChatCompletion.choices[0].message.content;
-
-    console.log(imagePromptChatCompletionContent);
-
-    const imagePrompt = `Please put the following foods on a dinner table in birds eye view. The proportions and quantities are important. Do not cut off any of the foods at the edges of the image. The foods are: ${imagePromptChatCompletionContent}.`;
-
-    let { data: analysis, count: versionCount } = await supabase
-      .from("analysis")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .eq("logical_date", logicalDate);
-
-    if (!versionCount || versionCount === 0) {
-      versionCount = 1;
-    }
-
-    console.log(analysis);
-
-    const image = await openai.images.generate({
-      model: "gpt-image-1",
-      prompt: imagePrompt,
-      n: 1,
-      size: "1024x1024",
-    });
-
-    // Save the image to cloudflare r2
-    const imageBase64 = image.data[0].b64_json;
-
-    if (imageBase64) {
-      const imageBytes = Buffer.from(imageBase64, "base64");
-
-      const imageUrl = await uploadToR2(
-        imageBytes,
-        `${userId}/${logicalDate}-${versionCount + 1}.png`
+      const feedbackChatCompletionResponse = await generateFeedbackUsingOpenAI(
+        formattedMessages
       );
 
-      console.log(imageUrl);
+      const listOfFoods = await generateListOfFoodsUsingOpenAI(
+        formattedMessages
+      );
 
-      const insertSummaryQuery = await supabase.from("analysis").insert({
+      const versionCount = await getAnalysisVersionNumber(userId, logicalDate);
+
+      const { image, imagePrompt } = await generateImageUsingOpenAI(
+        listOfFoods
+      );
+
+      const imageUrl = `${userId}/${logicalDate}-${versionCount + 1}.png`;
+
+      await uploadImageToR2(imageUrl, image);
+
+      await insertAnalysisInSupabase(supabase, {
         user_id: userId,
         logical_date: logicalDate,
-        image_url: `${userId}/${logicalDate}-${versionCount + 1}.png`,
+        image_url: imageUrl,
         image_prompt: imagePrompt,
         feedback: feedbackChatCompletionResponse,
       });
 
-      if (insertSummaryQuery.error) {
-        console.error(insertSummaryQuery.error);
-      }
-    }
+      const messageIds = messages.map((message) => message.id);
+      const latestMessageIdProcessed = Math.max(...messageIds);
 
-    return reply.status(200).send(feedbackChatCompletionResponse);
+      const { error: updateError } = await supabase
+        .from("message")
+        .update({ is_processed: true })
+        .lte("id", latestMessageIdProcessed);
+
+      if (updateError) {
+        console.error(updateError);
+        throw new Error("Failed to mark messages as processed");
+      }
+
+      return reply.status(200).send(feedbackChatCompletionResponse);
+    } catch (error) {
+      console.error(error);
+      return reply.status(500).send({ error: "Internal server error" });
+    }
   });
 }

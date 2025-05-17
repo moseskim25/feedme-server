@@ -5,6 +5,7 @@ export async function getAnalysisStatus(fastify: FastifyInstance) {
   fastify.get("/analysis/status", async (request, reply) => {
     try {
       const userId = request.userId;
+      console.log("userId", userId);
 
       const query = `SELECT EXISTS (
                         SELECT 1 FROM message WHERE user_id = $1 AND is_processed = false

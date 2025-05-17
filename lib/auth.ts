@@ -6,6 +6,7 @@ import { pool } from "./db";
 declare module "fastify" {
   interface FastifyRequest {
     userId?: string;
+    authToken?: string;
   }
 }
 
@@ -31,7 +32,7 @@ export async function authenticate(
       return { authenticated: false };
     }
 
-    return { authenticated: true, userId: data.user?.id };
+    return { authenticated: true, userId: data.user.id };
   } catch (err) {
     console.error("Auth error:", err);
     reply
@@ -43,12 +44,32 @@ export async function authenticate(
 
 export function authMiddleware() {
   return async (request: FastifyRequest, reply: FastifyReply) => {
-    const auth = await authenticate(request, reply);
-    if (!auth.authenticated) {
+    try {
+      const token = request.headers.authorization?.replace("Bearer ", "");
+
+      if (!token) {
+        reply.status(401).send({ error: "Unauthorized: No token provided" });
+        return reply;
+      }
+
+      const supabase = createSupabaseClient(token);
+      const { data, error } = await supabase.auth.getUser();
+
+      if (error) {
+        console.error("Auth error:", error);
+        reply.status(401).send({ error: "Unauthorized: Invalid token" });
+        return reply;
+      }
+
+      // Add both userId and token to the request
+      request.userId = data.user?.id;
+      request.authToken = token;
+    } catch (err) {
+      console.error("Auth error:", err);
+      reply
+        .status(500)
+        .send({ error: "Internal server error during authentication" });
       return reply;
     }
-
-    // Add the userId to the request for use in route handlers
-    request.userId = auth.userId;
   };
 }
