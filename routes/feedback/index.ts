@@ -1,12 +1,12 @@
 import { pool } from "@/lib/db";
 import { FastifyInstance } from "fastify";
 
-export async function getAnalysis(fastify: FastifyInstance) {
-  fastify.get("/analysis", async (request, reply) => {
+export async function getFeedback(fastify: FastifyInstance) {
+  fastify.get("/feedback", async (request, reply) => {
     try {
       const query = `
         SELECT DISTINCT ON (logical_date) * 
-        FROM analysis
+        FROM feedback
         ORDER BY logical_date DESC, created_at DESC;
       `;
 

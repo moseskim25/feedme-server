@@ -9,34 +9,25 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      analysis: {
+      feedback: {
         Row: {
+          content: string
           created_at: string
-          feedback: string
           id: number
-          image_prompt: string
-          image_url: string
-          is_processed: boolean | null
           logical_date: string
           user_id: string
         }
         Insert: {
+          content: string
           created_at?: string
-          feedback: string
           id?: number
-          image_prompt: string
-          image_url: string
-          is_processed?: boolean | null
           logical_date: string
           user_id: string
         }
         Update: {
+          content?: string
           created_at?: string
-          feedback?: string
           id?: number
-          image_prompt?: string
-          image_url?: string
-          is_processed?: boolean | null
           logical_date?: string
           user_id?: string
         }
@@ -50,12 +41,50 @@ export type Database = {
           },
         ]
       }
+      food: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: number
+          image_prompt: string | null
+          logical_date: string
+          r2_key: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: number
+          image_prompt?: string | null
+          logical_date: string
+          r2_key?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: number
+          image_prompt?: string | null
+          logical_date?: string
+          r2_key?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "food_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message: {
         Row: {
           content: string
           created_at: string
           id: number
-          is_processed: boolean
+          is_processed: boolean | null
           logical_date: string | null
           role: string
           user_id: string | null
@@ -64,7 +93,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: number
-          is_processed?: boolean
+          is_processed?: boolean | null
           logical_date?: string | null
           role: string
           user_id?: string | null
@@ -73,7 +102,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: number
-          is_processed?: boolean
+          is_processed?: boolean | null
           logical_date?: string | null
           role?: string
           user_id?: string | null

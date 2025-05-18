@@ -8,9 +8,9 @@ import "tsconfig-paths/register";
 import fastifyMultipart from "@fastify/multipart";
 import fastifyCors from "@fastify/cors";
 import { transcribe } from "./routes/transcribe/index";
-import { generateAnalysis, getAnalysis } from "./routes/analysis";
-import { getAnalysisStatus } from "./routes/analysis/status";
 import { authMiddleware } from "./lib/auth";
+import { processMessage } from "./routes/process-message";
+import { getFeedback } from "./routes/feedback";
 
 // Custom type declaration for request
 declare module "fastify" {
@@ -48,12 +48,10 @@ fastify.addHook("preHandler", authMiddleware());
 // Transcribe
 fastify.register(transcribe);
 
-// Analysis
-fastify.register(generateAnalysis);
-fastify.register(getAnalysis);
+// Process Message
+fastify.register(processMessage);
 
-// Analysis Status
-fastify.register(getAnalysisStatus);
+fastify.register(getFeedback);
 
 const PORT = Number(process.env.PORT) || 3001;
 
