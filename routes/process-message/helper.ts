@@ -57,20 +57,54 @@ export const generateListOfFoodsUsingOpenAI = async (
 ) => {
   try {
     console.log("messages", messages);
+
+    const prompt = `
+Task:  
+Extract and generate a structured list of all foods and drinks mentioned in the conversation. Include quantities and descriptions.
+
+Guidelines:
+
+1. Group Appropriately:  
+   - A "food" can be a complete plate, a single item, or a drink.  
+   - Do NOT split ingredients unless the item was clearly consumed separately.  
+   - Example: "A plate of rice and chicken" should remain as one item unless specified otherwise.
+
+2. Handle Repeated Items Individually:  
+   - If an item is mentioned multiple times, list each instance separately.  
+   - Example: "I had 2 glasses of milk, then another later" → Output:  
+     - 1 glass of milk  
+     - 1 glass of milk  
+     - 1 glass of milk  
+
+3. Quantity Inclusion:  
+   - Always include quantities using appropriate metrics (e.g., 1 cup, 1 plate, 1 glass, etc.).  
+   - If quantity isn't specified, assume 1 by default.
+
+4. Assume Implied Consumption:  
+   - If a food or drink is mentioned without context assume it was consumed.  
+   - Use natural default units:  
+     - For drinks (milk, juice, water, coffee), assume **1 cup**.  
+     - For snack foods (e.g., chocolate, candy, cookies), assume **1 piece** if unspecified.  
+     - For solid foods, assume **1 serving**, **1 plate**, or another appropriate unit based on the item.
+
+5. Include Accompaniments:  
+   - If sauces or condiments were consumed with a meal, include them with the main item.  
+   - Example: "Fries with ketchup" → "1 serving of fries with ketchup"
+
+6. Empty Result:  
+   - If no foods or drinks are mentioned, return an empty array.
+
+7. Output Format:  
+   - Provide the final list as a clean array of descriptive strings, one item per line.
+`;
+
     const completion = await openai.responses.parse({
       model: "gpt-4o",
       input: [
         ...messages,
         {
           role: "user",
-          content: `This conversation mentions the foods I've eaten. Your job is to generate a list of anything I consumed as a description including the quantity.
-
-GUIDELINE:
-1. A food is not each ingredient. It can be a plate of food including various items. For example, a plate of rice and chicken doesn't have to be split up into rice and chicken. It can be a single item on a plate.
-2. If a food is mentioned multiple times, include it as a separate item.
-3. If no foods are mentioned, return an empty array.
-4. If no quantity is mentioned, assume it is 1.
-5. If sauces were eaten with a meal, you can include it along with the meal it was eaten with.`,
+          content: prompt,
         },
       ],
       text: {
@@ -102,16 +136,28 @@ GUIDELINE:
 
 export const generateImage = async (food: string) => {
   try {
-    const imagePrompt = `Generate an image from a slight top-down perspective.
+    const imagePrompt = `Generate a high-quality, realistic image from a slight top-down perspective.
 
-GUIDELINE:
-- Do not cut the image off at the edges.
-- The image should be of a single food item.
-- The quantity of the food item is very important.
-- The background should be transparent.
-- The images should be presented in a realistic way. Example, in a bowl or on a plate.
+GUIDELINES:
+- Do not cut off any part of the food; the entire item must be fully visible within the image frame.
+- Show exactly one food item based on the specified quantity. 
+  - Example: "1 cup of rice" should clearly show one cup of rice, not multiple cups.
+  - Example: "1 piece of chocolate" should show exactly one piece, not a full bar unless specified.
+- Present the food naturally:
+  - If appropriate, place it in a suitable container (e.g., on a plate, in a bowl, in a glass).
+  - If the food is typically served or presented without a container (e.g., an apple, a chocolate bar, a sandwich), display it directly without a container.
+  - For packaged foods, show them unwrapped unless the packaging is explicitly part of the request.
+- Ensure the quantity is visually obvious and accurate.
+- Scale the food size appropriately within the image frame:
+  - The food should appear at a natural and realistic size relative to the image space.
+  - Larger foods can occupy more of the frame, while smaller items should appear proportionally smaller, but still clearly visible.
+  - Avoid making small items appear overly large or insignificant within the frame. Use good visual balance.
+  - The background must be transparent with no shadows extending outside the image boundary.
+- Do not add any additional objects, text, human elements, or decorations.
+- Use soft, natural lighting to make the food look appetizing.
+- Keep the focus entirely on the food item without visual clutter.
 
-The image should be of: ${food}
+The image should be of: ${food}.
 `;
 
     const image = await openai.images.generate({
@@ -145,7 +191,7 @@ export const generateFeedback = async (
     .is("is_processed", true)
     .order("created_at", { ascending: true });
 
-  if (messages.error) {
+  if (messages.error || !messages.data || messages.data.length === 0) {
     console.error(messages.error);
     throw new Error("Failed to get messages");
   }

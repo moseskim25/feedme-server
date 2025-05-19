@@ -39,7 +39,7 @@ export async function processMessage(fastify: FastifyInstance) {
         formattedMessages
       );
 
-      for (const food of listOfFoods) {
+      const foodPromises = listOfFoods.map(async (food) => {
         const insertFood = await supabase
           .from("food")
           .insert({
@@ -73,7 +73,11 @@ export async function processMessage(fastify: FastifyInstance) {
           console.error(updateFood.error);
           throw new Error("Failed to update food");
         }
-      }
+
+        return insertFood.data;
+      });
+
+      await Promise.all(foodPromises);
 
       const feedback = await generateFeedback(supabase, userId, logicalDate);
 
