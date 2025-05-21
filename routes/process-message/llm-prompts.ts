@@ -1,3 +1,5 @@
+import { getCurrentTime } from "@/lib/utils/date.utils";
+
 export const extractFoodsPrompt = `
 Task:  
 Extract and generate a structured list of all foods and drinks mentioned in the conversation. Include quantities and descriptions.
@@ -72,4 +74,15 @@ GUIDELINES:
 - Keep the focus entirely on the food item without visual clutter.
 
 The image should be of: ${food}.
+`;
+
+export const generateFeedbackPrompt = () =>
+  `
+Based on this conversation, provide feedback on my diet keeping in mind the time of day is ${getCurrentTime()}.
+
+Guidelines:
+1. The first sentence should be a compliment specific to their diet, unless there actually is nothing positive to say about their diet.
+2. The second sentence should be constructive criticism, unless their diet is already perfect.
+3. Keep your response concise.
+4. Your response should be in two sentences.
 `;

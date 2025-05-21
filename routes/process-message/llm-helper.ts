@@ -6,6 +6,7 @@ import { z } from "zod";
 import {
   extractFoodsPrompt,
   extractSymptomsPrompt,
+  generateFeedbackPrompt,
   generateImagePrompt,
 } from "./llm-prompts";
 import { SupabaseClient } from "@supabase/supabase-js";
@@ -44,6 +45,8 @@ export const extractFoodsFromMessages = async (
     }
 
     const listOfFoods = content.foods;
+
+    console.log("listOfFoods", listOfFoods);
 
     return listOfFoods;
   } catch (error) {
@@ -132,7 +135,7 @@ export const generateFeedback = async (
         })),
         {
           role: "user",
-          content: `Based on this conversation, provide feedback on my diet keeping in mind the time of day is ${getCurrentTime()}. Keep it relatively short and concise. Your response should be in one paragraph.`,
+          content: generateFeedbackPrompt(),
         },
       ],
     });
