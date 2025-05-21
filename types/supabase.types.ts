@@ -109,6 +109,38 @@ export type Database = {
         }
         Relationships: []
       }
+      symptom: {
+        Row: {
+          created_at: string
+          description: string
+          id: number
+          logical_date: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: number
+          logical_date?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: number
+          logical_date?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "symptom_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user: {
         Row: {
           avatarUrl: string | null

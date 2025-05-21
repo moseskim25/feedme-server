@@ -1,12 +1,20 @@
 import { createSupabaseClient } from "@/lib/supabase";
 import { FastifyInstance } from "fastify";
 import {
-  generateListOfFoodsUsingOpenAI,
   uploadImageToR2,
   getUnprocessedMessages,
+  createFoodEntry,
+  createSymptomEntries,
+  updateFoodEntry,
+  insertFeedbackToDatabase,
+  updateMessageProcessedStatus,
+} from "./helper";
+import {
+  extractFoodsFromMessages,
+  extractSymptomsFromMessages,
   generateImage,
   generateFeedback,
-} from "./helper";
+} from "./llm-helper";
 
 export async function processMessage(fastify: FastifyInstance) {
   fastify.post<{
@@ -35,75 +43,37 @@ export async function processMessage(fastify: FastifyInstance) {
         content: message.content,
       }));
 
-      const listOfFoods = await generateListOfFoodsUsingOpenAI(
-        formattedMessages
-      );
+      const foods = await extractFoodsFromMessages(formattedMessages);
 
-      const foodPromises = listOfFoods.map(async (food) => {
-        const insertFood = await supabase
-          .from("food")
-          .insert({
-            user_id: userId,
-            logical_date: logicalDate,
-            description: food,
-          })
-          .select()
-          .single();
+      const symptoms = await extractSymptomsFromMessages(formattedMessages);
+      await createSymptomEntries(supabase, userId, logicalDate, symptoms);
 
-        if (insertFood.error) {
-          console.error(`Failed to insert food: ${JSON.stringify(insertFood)}`);
-          throw new Error(
-            `Failed to insert food: ${JSON.stringify(insertFood)}`
-          );
-        }
+      const foodPromises = foods.map(async (food) => {
+        const foodEntry = await createFoodEntry(
+          supabase,
+          userId,
+          logicalDate,
+          food
+        );
 
         const image = await generateImage(food);
-
-        const imageUrl = `${userId}/${logicalDate}/${insertFood.data.id}.png`;
+        const imageUrl = `${userId}/${logicalDate}/${foodEntry.id}.png`;
         await uploadImageToR2(imageUrl, image);
 
-        const updateFood = await supabase
-          .from("food")
-          .update({
-            r2_key: imageUrl,
-          })
-          .eq("id", insertFood.data.id);
+        await updateFoodEntry(supabase, foodEntry.id, {
+          r2_key: imageUrl,
+        });
 
-        if (updateFood.error) {
-          console.error(updateFood.error);
-          throw new Error("Failed to update food");
-        }
-
-        return insertFood.data;
+        return foodEntry;
       });
 
       await Promise.all(foodPromises);
 
       const feedback = await generateFeedback(supabase, userId, logicalDate);
-
-      const insertFeedback = await supabase.from("feedback").insert({
-        user_id: userId,
-        logical_date: logicalDate,
-        content: feedback,
-      });
-
-      if (insertFeedback.error) {
-        console.error(insertFeedback.error);
-        throw new Error("Failed to insert feedback");
-      }
+      await insertFeedbackToDatabase(supabase, userId, logicalDate, feedback);
 
       const messageIds = messages.map((message) => message.id);
-      const updateMessageProcessedStatus = await supabase
-        .from("message")
-        .update({
-          is_processed: true,
-        })
-        .in("id", messageIds);
-
-      if (updateMessageProcessedStatus.error) {
-        console.error(updateMessageProcessedStatus.error);
-        throw new Error("Failed to update message processed status");
-      }
+      await updateMessageProcessedStatus(supabase, messageIds);
 
       return reply.status(200).send(feedback);
     } catch (error) {
