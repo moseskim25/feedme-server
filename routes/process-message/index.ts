@@ -14,6 +14,7 @@ import {
   extractSymptomsFromMessage,
   generateImage,
   generateFeedback,
+  generateImageDescription,
 } from "./llm-helper";
 
 export async function processMessage(fastify: FastifyInstance) {
@@ -46,14 +47,19 @@ export async function processMessage(fastify: FastifyInstance) {
       await createSymptomEntries(supabase, userId, logicalDate, symptoms);
 
       const foodPromises = foods.map(async (food) => {
+        const description = await generateImageDescription(food);
+
+        console.log(description);
+
         const foodEntry = await createFoodEntry(
           supabase,
           userId,
           logicalDate,
-          food
+          food,
+          description
         );
 
-        const image = await generateImage(food);
+        const image = await generateImage(description);
         const imageUrl = `${userId}/${logicalDate}/${foodEntry.id}.png`;
         await uploadImageToR2(imageUrl, image);
 

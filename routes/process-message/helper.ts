@@ -81,7 +81,8 @@ export const createFoodEntry = async (
   supabase: SupabaseClient,
   userId: string,
   logicalDate: string,
-  food: string
+  food: string,
+  image_prompt: string
 ) => {
   const insertFood = await supabase
     .from("food")
@@ -89,6 +90,7 @@ export const createFoodEntry = async (
       user_id: userId,
       logical_date: logicalDate,
       description: food,
+      image_prompt
     })
     .select()
     .single();

@@ -55,17 +55,20 @@ Guidelines:
 4. If no symptoms are found, return an empty array.
 `;
 
-export const generateImagePrompt = (
-  food: string
-) => `Generate a realistic and appealing image of ${food} from a slight top-down perspective.
+export const generateImagePrompt = (food: string) => `
+Generate a photorealistic image of ${food} in an appropriate serving medium shot from a slight top-down angle.
+`;
 
-GUIDELINES:
-- Do not cut off any part of the food; the entire item must be fully visible within the image frame.
-- Unless the food is specified as raw, the image should be cooked.
-- The food should be in a medium that is appropriate for the food, such as a plate, bowl, or cup.
-- Do not add any background. The background should be transparent.
-- Do not add any additional objects, text, human elements, or decorations.
-- Do not add additional ingredients to the food.
+export const generateImageDescriptionPrompt = (food: string) => `
+You're job is to generate a description of ${food} for an image generation model.
+
+Guidelines:
+- The image should be from a slight top-down angle.
+- The background should always be transparent.
+- The medium should be appropriate for the food, for example a plate, bowl, or cup.
+- Make sure to emphasize what is or is not included in the food. If the food is vague, describe the original food without any additional ingredients.
+- Describe the medium the food is served in. If it's a refreshing drink, it makes sense for the cup to be clear. If it's a hot drink then a mug. Discern the appropriate medium.
+- The background is often mistaken and not transparent. Make sure to describe the background as transparent.
 `;
 
 export const generateFeedbackPrompt = () =>

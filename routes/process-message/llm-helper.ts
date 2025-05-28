@@ -8,6 +8,7 @@ import {
   extractSymptomsPrompt,
   generateFeedbackPrompt,
   generateImagePrompt,
+  generateImageDescriptionPrompt,
 } from "./llm-prompts";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { getCurrentTime } from "@/lib/utils/date.utils";
@@ -44,6 +45,8 @@ export const extractFoodsFromMessage = async (message: Tables<"message">) => {
     }
 
     const listOfFoods = content.foods;
+
+    console.log(listOfFoods);
 
     return listOfFoods;
   } catch (error) {
@@ -85,11 +88,26 @@ export const extractSymptomsFromMessage = async (
   return symptoms;
 };
 
-export const generateImage = async (food: string) => {
+export const generateImageDescription = async (food: string) => {
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o",
+    messages: [{ role: "user", content: generateImageDescriptionPrompt(food) }],
+  });
+
+  const content = completion.choices[0].message.content;
+
+  if (!content) {
+    throw new Error("No content received from OpenAI");
+  }
+
+  return content;
+};
+
+export const generateImage = async (description: string) => {
   try {
     const image = await openai.images.generate({
       model: "gpt-image-1",
-      prompt: generateImagePrompt(food),
+      prompt: description,
       size: "1024x1024",
       quality: "medium",
     });
