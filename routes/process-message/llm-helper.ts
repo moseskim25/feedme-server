@@ -11,18 +11,17 @@ import {
 } from "./llm-prompts";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { getCurrentTime } from "@/lib/utils/date.utils";
+import { Database, Tables } from "@/types/supabase.types";
 
-export const extractFoodsFromMessages = async (
-  messages: {
-    role: "user" | "system";
-    content: string;
-  }[]
-) => {
+export const extractFoodsFromMessage = async (message: Tables<"message">) => {
   try {
     const completion = await openai.responses.parse({
       model: "gpt-4o",
       input: [
-        ...messages,
+        {
+          role: message.role as "user" | "system",
+          content: message.content,
+        },
         {
           role: "user",
           content: extractFoodsPrompt,
@@ -46,8 +45,6 @@ export const extractFoodsFromMessages = async (
 
     const listOfFoods = content.foods;
 
-    console.log("listOfFoods", listOfFoods);
-
     return listOfFoods;
   } catch (error) {
     console.error(error);
@@ -55,15 +52,18 @@ export const extractFoodsFromMessages = async (
   }
 };
 
-export const extractSymptomsFromMessages = async (
-  messages: {
-    role: "user" | "system";
-    content: string;
-  }[]
+export const extractSymptomsFromMessage = async (
+  message: Tables<"message">
 ) => {
   const completion = await openai.responses.parse({
     model: "gpt-4o",
-    input: [...messages, { role: "user", content: extractSymptomsPrompt }],
+    input: [
+      {
+        role: message.role as "user" | "system",
+        content: message.content,
+      },
+      { role: "user", content: extractSymptomsPrompt },
+    ],
     text: {
       format: zodTextFormat(
         z.object({
@@ -81,8 +81,6 @@ export const extractSymptomsFromMessages = async (
   }
 
   const symptoms = content.symptoms;
-
-  console.log("symptoms", symptoms);
 
   return symptoms;
 };
@@ -108,30 +106,29 @@ export const generateImage = async (food: string) => {
 };
 
 export const generateFeedback = async (
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   userId: string,
   logicalDate: string
 ) => {
-  const messages = await supabase
-    .from("message")
+  const foods = await supabase
+    .from("food")
     .select("*")
     .eq("user_id", userId)
     .eq("logical_date", logicalDate)
-    .is("is_processed", false)
     .order("created_at", { ascending: true });
 
-  if (messages.error || !messages.data || messages.data.length === 0) {
-    console.error(messages.error);
-    throw new Error("Failed to get messages");
+  if (foods.error || !foods.data) {
+    console.error(foods.error);
+    throw new Error("Failed to get foods");
   }
 
   try {
     const feedbackChatCompletion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
-        ...messages.data.map((message) => ({
-          role: message.role,
-          content: message.content,
+        ...foods.data.map((food) => ({
+          role: "user" as "user",
+          content: food.description as string,
         })),
         {
           role: "user",

@@ -36,8 +36,13 @@ Guidelines:
 6. Empty Result:  
    - If no foods or drinks are mentioned, return an empty array.
 
-7. Output Format:  
+7. Default Ingredients:
+   - If a food or drink is mentioned with no ingredients, toppings, or add-ins specified, output the item as its base version and state the absence explicitly in the description (e.g., “plain”, “no toppings”, “black”, “unsweetened”).
+   - Only list extra ingredients when the user clearly mentions them.
+
+Output Format:  
    - Provide the final list as a clean array of descriptive strings, one item per line.
+   - Each description must reflect any defaults (e.g. "plain", "no toppings", "black", "unsweetened")
 `;
 
 export const extractSymptomsPrompt = `
@@ -52,28 +57,15 @@ Guidelines:
 
 export const generateImagePrompt = (
   food: string
-) => `Generate a high-quality, realistic image from a slight top-down perspective.
+) => `Generate a realistic and appealing image of ${food} from a slight top-down perspective.
 
 GUIDELINES:
 - Do not cut off any part of the food; the entire item must be fully visible within the image frame.
-- Show exactly one food item based on the specified quantity. 
-  - Example: "1 cup of rice" should clearly show one cup of rice, not multiple cups.
-  - Example: "1 piece of chocolate" should show exactly one piece, not a full bar unless specified.
-- Present the food naturally:
-  - If appropriate, place it in a suitable container (e.g., on a plate, in a bowl, in a glass).
-  - If the food is typically served or presented without a container (e.g., an apple, a chocolate bar, a sandwich), display it directly without a container.
-  - For packaged foods, show them unwrapped unless the packaging is explicitly part of the request.
-- Ensure the quantity is visually obvious and accurate.
-- Scale the food size appropriately within the image frame:
-  - The food should appear at a natural and realistic size relative to the image space.
-  - Larger foods can occupy more of the frame, while smaller items should appear proportionally smaller, but still clearly visible.
-  - Avoid making small items appear overly large or insignificant within the frame. Use good visual balance.
-- The background must be transparent with no shadows extending outside the image boundary.
+- Unless the food is specified as raw, the image should be cooked.
+- The food should be in a medium that is appropriate for the food, such as a plate, bowl, or cup.
+- Do not add any background. The background should be transparent.
 - Do not add any additional objects, text, human elements, or decorations.
-- Use soft, natural lighting to make the food look appetizing.
-- Keep the focus entirely on the food item without visual clutter.
-
-The image should be of: ${food}.
+- Do not add additional ingredients to the food.
 `;
 
 export const generateFeedbackPrompt = () =>

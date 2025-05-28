@@ -1,7 +1,7 @@
 import { openai } from "@/lib/openai";
 import { uploadToR2 } from "@/lib/r2";
 import { getCurrentTime } from "@/lib/utils/date.utils";
-import { Tables, TablesUpdate } from "@/types/supabase.types";
+import { Database, Tables, TablesUpdate } from "@/types/supabase.types";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { ImagesResponse } from "openai/resources/images";
 
@@ -26,26 +26,29 @@ export const uploadImageToR2 = async (
   await uploadToR2(imageBytes, filename);
 };
 
-export const getUnprocessedMessages = async (
-  supabase: SupabaseClient,
+export const recordMessageInSupabase = async (
+  supabase: SupabaseClient<Database>,
   userId: string,
-  logicalDate: string
+  logicalDate: string,
+  message: string
 ) => {
-  const { data, error } = await supabase
+  const insertMessage = await supabase
     .from("message")
+    .insert({
+      user_id: userId,
+      content: message,
+      role: "user",
+      logical_date: logicalDate,
+    })
     .select("*")
-    .eq("user_id", userId)
-    .eq("logical_date", logicalDate)
-    .is("is_processed", false);
+    .single();
 
-  if (error) {
-    console.error(error);
-    throw new Error("Failed to get unprocessed messages");
+  if (insertMessage.error) {
+    console.error(insertMessage.error);
+    throw new Error("Failed to insert message");
   }
 
-  console.log("data", data);
-
-  return data;
+  return insertMessage.data;
 };
 
 export const createSymptomEntries = async (
@@ -138,14 +141,14 @@ export const insertFeedbackToDatabase = async (
 
 export const updateMessageProcessedStatus = async (
   supabase: SupabaseClient,
-  messageIds: string[]
+  messageId: Tables<"message">["id"]
 ) => {
   const updateMessageProcessedStatus = await supabase
     .from("message")
     .update({
       is_processed: true,
     })
-    .in("id", messageIds);
+    .eq("id", messageId);
 
   if (updateMessageProcessedStatus.error) {
     console.error(updateMessageProcessedStatus.error);

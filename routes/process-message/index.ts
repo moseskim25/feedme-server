@@ -2,16 +2,16 @@ import { createSupabaseClient } from "@/lib/supabase";
 import { FastifyInstance } from "fastify";
 import {
   uploadImageToR2,
-  getUnprocessedMessages,
   createFoodEntry,
   createSymptomEntries,
   updateFoodEntry,
   insertFeedbackToDatabase,
   updateMessageProcessedStatus,
+  recordMessageInSupabase,
 } from "./helper";
 import {
-  extractFoodsFromMessages,
-  extractSymptomsFromMessages,
+  extractFoodsFromMessage,
+  extractSymptomsFromMessage,
   generateImage,
   generateFeedback,
 } from "./llm-helper";
@@ -20,6 +20,7 @@ export async function processMessage(fastify: FastifyInstance) {
   fastify.post<{
     Body: {
       logicalDate: string;
+      message: string;
     };
   }>("/process-message", async (request, reply) => {
     try {
@@ -32,20 +33,16 @@ export async function processMessage(fastify: FastifyInstance) {
       const supabase = createSupabaseClient(authToken);
       const logicalDate = request.body.logicalDate;
 
-      const messages = await getUnprocessedMessages(
+      const message = await recordMessageInSupabase(
         supabase,
         userId,
-        logicalDate
+        logicalDate,
+        request.body.message
       );
 
-      const formattedMessages = messages.map((message) => ({
-        role: message.role as "user" | "system",
-        content: message.content,
-      }));
+      const foods = await extractFoodsFromMessage(message);
 
-      const foods = await extractFoodsFromMessages(formattedMessages);
-
-      const symptoms = await extractSymptomsFromMessages(formattedMessages);
+      const symptoms = await extractSymptomsFromMessage(message);
       await createSymptomEntries(supabase, userId, logicalDate, symptoms);
 
       const foodPromises = foods.map(async (food) => {
@@ -72,8 +69,7 @@ export async function processMessage(fastify: FastifyInstance) {
       const feedback = await generateFeedback(supabase, userId, logicalDate);
       await insertFeedbackToDatabase(supabase, userId, logicalDate, feedback);
 
-      const messageIds = messages.map((message) => message.id);
-      await updateMessageProcessedStatus(supabase, messageIds);
+      await updateMessageProcessedStatus(supabase, message.id);
 
       return reply.status(200).send(feedback);
     } catch (error) {
