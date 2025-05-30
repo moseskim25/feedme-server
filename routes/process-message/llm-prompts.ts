@@ -69,6 +69,9 @@ Guidelines:
 - Make sure to emphasize what is or is not included in the food. If the food is vague, describe the original food without any additional ingredients.
 - Describe the medium the food is served in. If it's a refreshing drink, it makes sense for the cup to be clear. If it's a hot drink then a mug. Discern the appropriate medium.
 - The background is often mistaken and not transparent. Make sure to describe the background as transparent.
+- Focus on just the description of the food visually. Don't include details on why you're requesting it to look a certain way. For example, no need to say that something compliments the food.
+- Keep it relatively brief. If the description is too long it can cause the image generation model to hallucinate.
+- Based on the serving size, be very exact in the quantity. If one serving typically has x number of pieces, then describe it as such.
 `;
 
 export const generateFeedbackPrompt = () =>

@@ -79,6 +79,8 @@ export const extractSymptomsFromMessage = async (
 
   const content = completion.output_parsed;
 
+  console.log(content);
+
   if (!content) {
     throw new Error("No content received from OpenAI");
   }
