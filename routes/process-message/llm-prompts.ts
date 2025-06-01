@@ -76,7 +76,7 @@ Guidelines:
 
 export const generateFeedbackPrompt = () =>
   `
-Based on this conversation, provide feedback on my diet keeping in mind the time of day is ${getCurrentTime()}.
+Based on this conversation, provide feedback on my diet keeping in mind the time of day is ${getCurrentTime()}. The conversation does not mean the user at all of these foods at once but rather that they ate one of these foods at some point.
 
 Guidelines:
 1. The first sentence should be a compliment specific to their diet, unless there actually is nothing positive to say about their diet.

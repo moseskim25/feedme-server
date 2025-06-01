@@ -41,8 +41,6 @@ export async function processMessage(fastify: FastifyInstance) {
         request.body.message
       );
 
-      console.log(insertMessage);
-
       const foods = await extractFoodsFromMessage(insertMessage);
 
       const symptoms = await extractSymptomsFromMessage(insertMessage);
