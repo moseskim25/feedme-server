@@ -1,8 +1,8 @@
 import { getCurrentTime } from "@/lib/utils/date.utils";
 
-export const extractFoodsPrompt = `
+export const extractFoodsPrompt = (message: string) => `
 Task:  
-Extract and generate a structured list of all foods and drinks mentioned in the conversation. Include quantities and descriptions.
+Extract and generate a structured list of all foods and drinks mentioned in the following message: "${message}". Include quantities and descriptions.
 
 Guidelines:
 
@@ -20,7 +20,7 @@ Guidelines:
 
 3. Quantity Inclusion:  
    - Always include quantities using appropriate metrics (e.g., 1 cup, 1 plate, 1 glass, etc.).  
-   - If quantity isn't specified, assume 1 by default.
+   - If quantity isn't specified, assume 1 serving by default.
 
 4. Assume Implied Consumption:  
    - If a food or drink is mentioned without context assume it was consumed.  
@@ -41,7 +41,7 @@ Guidelines:
    - Only list extra ingredients when the user clearly mentions them.
 
 Output Format:  
-   - Provide the final list as a clean array of descriptive strings, one item per line.
+   - Provide the final list as a clean array of descriptive foods, one item per line.
    - Each description must reflect any defaults (e.g. "plain", "no toppings", "black", "unsweetened")
 `;
 
