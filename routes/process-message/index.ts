@@ -34,16 +34,18 @@ export async function processMessage(fastify: FastifyInstance) {
       const supabase = createSupabaseClient(authToken);
       const logicalDate = request.body.logicalDate;
 
-      const message = await recordMessageInSupabase(
+      const insertMessage = await recordMessageInSupabase(
         supabase,
         userId,
         logicalDate,
         request.body.message
       );
 
-      const foods = await extractFoodsFromMessage(message);
+      console.log(insertMessage);
 
-      const symptoms = await extractSymptomsFromMessage(message);
+      const foods = await extractFoodsFromMessage(insertMessage);
+
+      const symptoms = await extractSymptomsFromMessage(insertMessage);
       await createSymptomEntries(supabase, userId, logicalDate, symptoms);
 
       const foodPromises = foods.map(async (food) => {
@@ -75,7 +77,7 @@ export async function processMessage(fastify: FastifyInstance) {
       const feedback = await generateFeedback(supabase, userId, logicalDate);
       await insertFeedbackToDatabase(supabase, userId, logicalDate, feedback);
 
-      await updateMessageProcessedStatus(supabase, message.id);
+      await updateMessageProcessedStatus(supabase, insertMessage.id);
 
       return reply.status(200).send(feedback);
     } catch (error) {
