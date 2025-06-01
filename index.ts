@@ -1,65 +1,82 @@
 import "module-alias/register";
 import { setupGracefulShutdown } from "./lib/db-shutdown";
-import Fastify from "fastify";
+import express from "express";
 import "dotenv/config";
 import "tsconfig-paths/register";
+import cors from "cors";
+import multer from "multer";
+import pino from "pino";
 
 // Routes
-import fastifyMultipart from "@fastify/multipart";
-import fastifyCors from "@fastify/cors";
-import { transcribe } from "./routes/transcribe/index";
 import { authMiddleware } from "./lib/auth";
-import { processMessage } from "./routes/process-message";
-import { getFeedback } from "./routes/feedback";
+import { processMessageRouter } from "./routes/process-message";
+import { getFeedbackRouter } from "./routes/feedback";
 
 // Custom type declaration for request
-declare module "fastify" {
-  interface FastifyRequest {
-    userId?: string;
+declare global {
+  namespace Express {
+    interface Request {
+      userId?: string;
+      authToken?: string;
+    }
   }
 }
 
-// const fastify = Fastify({
-//   logger: true
-// })
+const app = express();
 
-const fastify = Fastify({
-  logger: {
-    transport: {
-      target: "pino-pretty",
-      options: {
-        colorize: true,
-        translateTime: "yyyy-mm-dd HH:MM:ss.l",
-        ignore: "pid,hostname",
-      },
+// Setup logger
+const logger = pino({
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+      translateTime: "yyyy-mm-dd HH:MM:ss.l",
+      ignore: "pid,hostname",
     },
   },
 });
 
-fastify.register(fastifyMultipart);
+// Custom request logging middleware
+app.use((req, res, next) => {
+  const start = Date.now();
 
-fastify.register(fastifyCors, {
-  origin: true,
+  logger.info(`${req.method} ${req.url}`);
+
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    logger.info(
+      `${req.method} ${req.url} - Request completed [${res.statusCode}] in ${duration}ms`
+    );
+  });
+
+  next();
 });
 
 // Middleware
-fastify.addHook("preHandler", authMiddleware());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Transcribe
-fastify.register(transcribe);
+// Setup multer for multipart/form-data
+const upload = multer();
+app.use(upload.any());
 
-// Process Message
-fastify.register(processMessage);
+app.use(
+  cors({
+    origin: true,
+  })
+);
 
-fastify.register(getFeedback);
+// Auth middleware
+app.use(authMiddleware());
+
+// Routes
+app.use(processMessageRouter);
+app.use(getFeedbackRouter);
 
 const PORT = Number(process.env.PORT) || 3001;
 
-fastify.listen({ port: PORT, host: "0.0.0.0" }, function (err, address) {
-  if (err) {
-    fastify.log.error(err);
-    process.exit(1);
-  }
+const server = app.listen(PORT, "0.0.0.0", () => {
+  logger.info(`Server listening on port ${PORT}`);
 });
 
-setupGracefulShutdown(fastify);
+setupGracefulShutdown(server, logger);

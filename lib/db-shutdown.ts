@@ -1,12 +1,15 @@
 import { pool } from "./db";
-import { FastifyInstance } from "fastify";
+import { Server } from "http";
 
-export function setupGracefulShutdown(fastify: FastifyInstance) {
+export function setupGracefulShutdown(server: Server, logger?: any) {
   const shutdown = async () => {
     console.log("Gracefully shutting down...");
 
     try {
-      await fastify.close(); // Stop accepting new requests
+      server.close(() => {
+        console.log("HTTP server closed.");
+      });
+
       await pool.end(); // Close DB pool connections
       console.log("Server and DB pool closed.");
     } catch (err) {

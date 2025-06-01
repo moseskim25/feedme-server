@@ -1,24 +1,18 @@
-import { FastifyRequest, FastifyReply } from "fastify";
+import { Request, Response, NextFunction } from "express";
 import { createSupabaseClient } from "./supabase";
 import { pool } from "./db";
 
-// Add the type declaration here
-declare module "fastify" {
-  interface FastifyRequest {
-    userId?: string;
-    authToken?: string;
-  }
-}
+// Type declarations are now in index.ts as global namespace extension
 
 export async function authenticate(
-  request: FastifyRequest,
-  reply: FastifyReply
+  request: Request,
+  response: Response
 ): Promise<{ authenticated: boolean; userId?: string }> {
   try {
     const token = request.headers.authorization?.replace("Bearer ", "");
 
     if (!token) {
-      reply.status(401).send({ error: "Unauthorized: No token provided" });
+      response.status(401).json({ error: "Unauthorized: No token provided" });
       return { authenticated: false };
     }
 
@@ -28,28 +22,29 @@ export async function authenticate(
 
     if (error) {
       console.error("Auth error:", error);
-      reply.status(401).send({ error: "Unauthorized: Invalid token" });
+      response.status(401).json({ error: "Unauthorized: Invalid token" });
       return { authenticated: false };
     }
 
     return { authenticated: true, userId: data.user.id };
   } catch (err) {
     console.error("Auth error:", err);
-    reply
+    response
       .status(500)
-      .send({ error: "Internal server error during authentication" });
+      .json({ error: "Internal server error during authentication" });
     return { authenticated: false };
   }
 }
 
 export function authMiddleware() {
-  return async (request: FastifyRequest, reply: FastifyReply) => {
+  return async (request: Request, response: Response, next: NextFunction) => {
     try {
       const token = request.headers.authorization?.replace("Bearer ", "");
 
       if (!token) {
-        reply.status(401).send({ error: "Unauthorized: No token provided" });
-        return reply;
+        return response
+          .status(401)
+          .json({ error: "Unauthorized: No token provided" });
       }
 
       const supabase = createSupabaseClient(token);
@@ -57,19 +52,21 @@ export function authMiddleware() {
 
       if (error) {
         console.error("Auth error:", error);
-        reply.status(401).send({ error: "Unauthorized: Invalid token" });
-        return reply;
+        return response
+          .status(401)
+          .json({ error: "Unauthorized: Invalid token" });
       }
 
       // Add both userId and token to the request
       request.userId = data.user?.id;
       request.authToken = token;
+
+      next();
     } catch (err) {
       console.error("Auth error:", err);
-      reply
+      return response
         .status(500)
-        .send({ error: "Internal server error during authentication" });
-      return reply;
+        .json({ error: "Internal server error during authentication" });
     }
   };
 }

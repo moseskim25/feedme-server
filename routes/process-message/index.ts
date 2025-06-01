@@ -1,5 +1,5 @@
 import { createSupabaseClient } from "@/lib/supabase";
-import { FastifyInstance } from "fastify";
+import { Router, Request, Response } from "express";
 import {
   uploadImageToR2,
   createFoodEntry,
@@ -17,18 +17,21 @@ import {
   generateImageDescription,
 } from "./llm-helper";
 
-export async function processMessage(fastify: FastifyInstance) {
-  fastify.post<{
-    Body: {
-      logicalDate: string;
-      message: string;
-    };
-  }>("/process-message", async (request, reply) => {
+export const processMessageRouter = Router();
+
+interface ProcessMessageBody {
+  logicalDate: string;
+  message: string;
+}
+
+processMessageRouter.post(
+  "/process-message",
+  async (request: Request<{}, {}, ProcessMessageBody>, response: Response) => {
     try {
       const userId = request.userId;
       const authToken = request.authToken;
       if (!userId || !authToken) {
-        return reply.status(401).send({ error: "Unauthorized" });
+        return response.status(401).json({ error: "Unauthorized" });
       }
 
       const supabase = createSupabaseClient(authToken);
@@ -77,10 +80,10 @@ export async function processMessage(fastify: FastifyInstance) {
 
       await updateMessageProcessedStatus(supabase, insertMessage.id);
 
-      return reply.status(200).send(feedback);
+      return response.status(200).json(feedback);
     } catch (error) {
       console.error(error);
-      return reply.status(500).send({ error: "Internal server error" });
+      return response.status(500).json({ error: "Internal server error" });
     }
-  });
-}
+  }
+);
