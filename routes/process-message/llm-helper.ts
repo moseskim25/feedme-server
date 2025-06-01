@@ -20,12 +20,8 @@ export const extractFoodsFromMessage = async (message: Tables<"message">) => {
       model: "gpt-4o",
       input: [
         {
-          role: message.role as "user" | "system",
-          content: message.content,
-        },
-        {
           role: "user",
-          content: extractFoodsPrompt,
+          content: extractFoodsPrompt(message.content),
         },
       ],
       text: {
@@ -39,6 +35,8 @@ export const extractFoodsFromMessage = async (message: Tables<"message">) => {
     });
 
     const content = completion.output_parsed;
+
+    console.log(content);
 
     if (!content) {
       throw new Error("No content received from OpenAI");
