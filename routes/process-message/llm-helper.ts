@@ -63,7 +63,7 @@ export const extractSymptomsFromMessage = async (
         role: message.role as "user" | "system",
         content: message.content,
       },
-      { role: "user", content: extractSymptomsPrompt },
+      { role: "user", content: extractSymptomsPrompt() },
     ],
     text: {
       format: zodTextFormat(
@@ -144,13 +144,11 @@ export const generateFeedback = async (
     const feedbackChatCompletion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
-        ...foods.data.map((food) => ({
-          role: "user" as "user",
-          content: food.description as string,
-        })),
         {
           role: "user",
-          content: generateFeedbackPrompt(),
+          content: generateFeedbackPrompt(
+            foods.data.map((food) => food.description as string)
+          ),
         },
       ],
     });

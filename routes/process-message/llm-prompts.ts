@@ -45,13 +45,13 @@ Output Format:
    - Each description must reflect any defaults (e.g. "plain", "no toppings", "black", "unsweetened")
 `;
 
-export const extractSymptomsPrompt = `
+export const extractSymptomsPrompt = () => `
 From the user's messages, extract all mentioned symptoms.
 
 Guidelines:
-1. Include only physical or emotional symptoms (e.g., bloating, mood swings, fatigue, pain, bowel movements, nausea).
+1. A symptom is a physical or emotional condition that the user is experiencing. Try to summarize their symptoms concisely but don't remove too many details.
 2. Exclude foods, activities, and general observations that are not symptoms.
-3. Return the symptoms as a plain array of strings, e.g., ["bloating", "fatigue"].
+3. Return the symptoms as an array of strings.
 4. If no symptoms are found, return an empty array.
 `;
 
@@ -74,13 +74,9 @@ Guidelines:
 - Based on the serving size, be very exact in the quantity. If one serving typically has x number of pieces, then describe it as such.
 `;
 
-export const generateFeedbackPrompt = () =>
+export const generateFeedbackPrompt = (foods: string[]) =>
   `
-Based on this conversation, provide feedback on my diet keeping in mind the time of day is ${getCurrentTime()}. The conversation does not mean the user at all of these foods at once but rather that they ate one of these foods at some point.
+This is what I ate today: ${foods.join(", ")}. Please criticize my diet.
 
-Guidelines:
-1. The first sentence should be a compliment specific to their diet, unless there actually is nothing positive to say about their diet.
-2. The second sentence should be constructive criticism, unless their diet is already perfect.
-3. Keep your response concise.
-4. Your response should be in two sentences.
+Keep your response max 2 sentences. First say something positive. Then give constructive criticism.
 `;
