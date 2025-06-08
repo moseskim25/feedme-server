@@ -8,9 +8,11 @@ import multer from "multer";
 import pino from "pino";
 
 // Routes
-import { authMiddleware } from "./lib/auth";
-import { processMessageRouter } from "./routes/process-message";
-import { getFeedbackRouter } from "./routes/feedback";
+import { authMiddleware } from "./src/middleware";
+import { processMessageRouter } from "./src/routes/process-message";
+import { feedbackRouter } from "./src/routes/feedback";
+import { foodRouter } from "./src/routes/food";
+import { messageCountRouter } from "./src/routes/message/count";
 
 // Custom type declaration for request
 declare global {
@@ -71,7 +73,9 @@ app.use(authMiddleware());
 
 // Routes
 app.use(processMessageRouter);
-app.use(getFeedbackRouter);
+app.use(feedbackRouter);
+app.use(foodRouter);
+app.use(messageCountRouter);
 
 const PORT = Number(process.env.PORT) || 3001;
 

@@ -7,13 +7,10 @@ import {
   extractFoodsPrompt,
   extractSymptomsPrompt,
   generateFeedbackPrompt,
-  generateImagePrompt,
   generateImageDescriptionPrompt,
 } from "./llm-prompts";
-import { SupabaseClient } from "@supabase/supabase-js";
-import { getCurrentTime } from "@/lib/utils/date.utils";
-import { Database, Tables } from "@/types/supabase.types";
-
+import { Tables } from "@/types/supabase.types";
+import { supabase } from "@/lib/supabase";
 export const extractFoodsFromMessage = async (message: Tables<"message">) => {
   try {
     const completion = await openai.responses.parse({
@@ -123,11 +120,7 @@ export const generateImage = async (description: string) => {
   }
 };
 
-export const generateFeedback = async (
-  supabase: SupabaseClient<Database>,
-  userId: string,
-  logicalDate: string
-) => {
+export const generateFeedback = async (userId: string, logicalDate: string) => {
   const foods = await supabase
     .from("food")
     .select("*")

@@ -4,6 +4,7 @@ import { getCurrentTime } from "@/lib/utils/date.utils";
 import { Database, Tables, TablesUpdate } from "@/types/supabase.types";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { ImagesResponse } from "openai/resources/images";
+import { supabase } from "@/lib/supabase";
 
 export const uploadImageToR2 = async (
   filename: string,
@@ -27,7 +28,6 @@ export const uploadImageToR2 = async (
 };
 
 export const recordMessageInSupabase = async (
-  supabase: SupabaseClient<Database>,
   userId: string,
   logicalDate: string,
   message: string
@@ -52,7 +52,6 @@ export const recordMessageInSupabase = async (
 };
 
 export const createSymptomEntries = async (
-  supabase: SupabaseClient,
   userId: string,
   logicalDate: string,
   symptoms: string[]
@@ -78,7 +77,6 @@ export const createSymptomEntries = async (
 };
 
 export const createFoodEntry = async (
-  supabase: SupabaseClient,
   userId: string,
   logicalDate: string,
   food: string,
@@ -90,7 +88,7 @@ export const createFoodEntry = async (
       user_id: userId,
       logical_date: logicalDate,
       description: food,
-      image_prompt
+      image_prompt,
     })
     .select()
     .single();
@@ -104,8 +102,7 @@ export const createFoodEntry = async (
 };
 
 export const updateFoodEntry = async (
-  supabase: SupabaseClient,
-  foodId: string,
+  foodId: Tables<"food">["id"],
   payload: TablesUpdate<"food">
 ) => {
   const updateFood = await supabase
@@ -122,7 +119,6 @@ export const updateFoodEntry = async (
 };
 
 export const insertFeedbackToDatabase = async (
-  supabase: SupabaseClient,
   userId: string,
   logicalDate: string,
   feedback: string
@@ -142,7 +138,6 @@ export const insertFeedbackToDatabase = async (
 };
 
 export const updateMessageProcessedStatus = async (
-  supabase: SupabaseClient,
   messageId: Tables<"message">["id"]
 ) => {
   const updateMessageProcessedStatus = await supabase

@@ -1,9 +1,9 @@
 import { pool } from "@/lib/db";
 import { Router } from "express";
 
-export const getFeedbackRouter = Router();
+export const feedbackRouter = Router();
 
-getFeedbackRouter.get("/feedback", async (req, res) => {
+feedbackRouter.get("/feedback", async (req, res) => {
   try {
     const query = `
       SELECT DISTINCT ON (logical_date) * 

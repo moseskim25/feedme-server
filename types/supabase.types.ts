@@ -44,6 +44,7 @@ export type Database = {
       food: {
         Row: {
           created_at: string
+          deleted_at: string | null
           description: string | null
           id: number
           image_prompt: string | null
@@ -53,6 +54,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           id?: number
           image_prompt?: string | null
@@ -62,6 +64,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           id?: number
           image_prompt?: string | null
@@ -114,21 +117,21 @@ export type Database = {
           created_at: string
           description: string
           id: number
-          logical_date: string | null
+          logical_date: string
           user_id: string | null
         }
         Insert: {
           created_at?: string
           description: string
           id?: number
-          logical_date?: string | null
+          logical_date: string
           user_id?: string | null
         }
         Update: {
           created_at?: string
           description?: string
           id?: number
-          logical_date?: string | null
+          logical_date?: string
           user_id?: string | null
         }
         Relationships: [
