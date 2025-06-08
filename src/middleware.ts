@@ -1,6 +1,4 @@
-import { Request, Response, NextFunction, response } from "express";
-import { pool } from "./lib/db";
-import { supabase } from "./lib/supabase";
+import { Request, Response, NextFunction } from "express";
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "@/types/supabase.types";
 
