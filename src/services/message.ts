@@ -11,7 +11,7 @@ const getCountOfMessagesForUserForToday = async (
     .from("message")
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId)
-    .eq("logical_date", logicalDate);
+    .gte("created_at", logicalDate);
 
   if (error) throw error;
 

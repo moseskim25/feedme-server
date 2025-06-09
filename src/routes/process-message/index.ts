@@ -47,6 +47,8 @@ processMessageRouter.post(
       const countOfMessagesForUserForToday =
         await getCountOfMessagesForUserForToday(userId);
 
+      console.log(countOfMessagesForUserForToday);
+
       if (countOfMessagesForUserForToday > 2) {
         return response.status(400).json({
           error: "You have reached the maximum number of messages for today",

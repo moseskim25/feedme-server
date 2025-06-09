@@ -13,6 +13,7 @@ import { processMessageRouter } from "./src/routes/process-message";
 import { feedbackRouter } from "./src/routes/feedback";
 import { foodRouter } from "./src/routes/food";
 import { messageCountRouter } from "./src/routes/message/count";
+import { feedRouter } from "./src/routes/feed";
 
 // Custom type declaration for request
 declare global {
@@ -76,6 +77,7 @@ app.use(processMessageRouter);
 app.use(feedbackRouter);
 app.use(foodRouter);
 app.use(messageCountRouter);
+app.use(feedRouter);
 
 const PORT = Number(process.env.PORT) || 3001;
 
