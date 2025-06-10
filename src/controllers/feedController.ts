@@ -1,6 +1,8 @@
 import { query, Request, Response } from "express";
 import { pool } from "@/lib/db";
 
+const LIMIT = 5;
+
 const feedController = async (req: Request, res: Response) => {
   try {
     const userId = req.userId as string;
@@ -12,7 +14,7 @@ const feedController = async (req: Request, res: Response) => {
       FROM feedback
       WHERE user_id = $1
       ORDER BY logical_date DESC, created_at DESC
-      LIMIT 5
+      LIMIT ${LIMIT}
       OFFSET $2;
     `;
 
@@ -68,11 +70,10 @@ const feedController = async (req: Request, res: Response) => {
       }
     }
 
-    console.log(data);
-
+    const noMoreRows = feedbackResult.rows.length < LIMIT;
     res.status(200).json({
       data,
-      nextOffset: offset + 5,
+      nextOffset: noMoreRows ? null : offset + LIMIT,
     });
   } catch (err) {
     console.error("Error in feedController:", err);
