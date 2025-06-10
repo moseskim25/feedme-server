@@ -44,16 +44,16 @@ processMessageRouter.post(
         request.body.message
       );
 
-      const countOfMessagesForUserForToday =
-        await getCountOfMessagesForUserForToday(userId);
+      // const countOfMessagesForUserForToday =
+      //   await getCountOfMessagesForUserForToday(userId);
 
-      console.log(countOfMessagesForUserForToday);
+      // console.log(countOfMessagesForUserForToday);
 
-      if (countOfMessagesForUserForToday > 10) {
-        return response.status(400).json({
-          error: "You have reached the maximum number of messages for today",
-        });
-      }
+      // if (countOfMessagesForUserForToday > 10) {
+      //   return response.status(400).json({
+      //     error: "You have reached the maximum number of messages for today",
+      //   });
+      // }
 
       const foods = await extractFoodsFromMessage(insertMessage);
 
