@@ -49,7 +49,7 @@ processMessageRouter.post(
 
       console.log(countOfMessagesForUserForToday);
 
-      if (countOfMessagesForUserForToday > 2) {
+      if (countOfMessagesForUserForToday > 10) {
         return response.status(400).json({
           error: "You have reached the maximum number of messages for today",
         });
