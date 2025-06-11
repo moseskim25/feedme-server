@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { messageCountController } from "@/src/controllers/messageCountController";
+import { messageCountController } from "@/src/controllers/message-count-controller";
 
 const messageCountRouter = Router();
 

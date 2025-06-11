@@ -8,9 +8,10 @@ import {
   extractSymptomsPrompt,
   generateFeedbackPrompt,
   generateImageDescriptionPrompt,
-} from "./llm-prompts";
+} from "./ai-prompt";
 import { Tables } from "@/types/supabase.types";
 import { supabase } from "@/lib/supabase";
+
 export const extractFoodsFromMessage = async (message: Tables<"message">) => {
   try {
     const completion = await openai.responses.parse({
