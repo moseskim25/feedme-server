@@ -14,6 +14,7 @@ import {
   foodRouter,
   messageCountRouter,
   feedRouter,
+  userRouter,
 } from "./src/routes";
 
 // Custom type declaration for request
@@ -78,6 +79,7 @@ app.use(processMessageRouter);
 app.use(foodRouter);
 app.use(messageCountRouter);
 app.use(feedRouter);
+app.use(userRouter);
 
 const PORT = Number(process.env.PORT) || 3001;
 
