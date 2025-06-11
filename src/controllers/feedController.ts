@@ -28,6 +28,7 @@ const feedController = async (req: Request, res: Response) => {
         FROM food
         WHERE user_id = $1
         AND logical_date = ANY($2)
+        AND deleted_at IS NULL
         ORDER BY logical_date DESC;
     `;
 

@@ -7,7 +7,7 @@ Extract and generate a structured list of all foods and drinks mentioned in the 
 Guidelines:
 
 1. Group Appropriately:  
-   - A "food" can be a complete plate, a single item, or a drink.  
+   - A "food" can be a complete plate, a single item, or a drink. Based on the message, place items together if they sound like they accompany each other. For example, if the user says "I had a salad and a sandwich", then the salad and sandwich should be grouped together.
    - Do NOT split ingredients unless the item was clearly consumed separately.  
    - Example: "A plate of rice and chicken" should remain as one item unless specified otherwise.
 

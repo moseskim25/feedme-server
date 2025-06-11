@@ -9,11 +9,12 @@ import pino from "pino";
 
 // Routes
 import { authMiddleware } from "./src/middleware";
-import { processMessageRouter } from "./src/routes/process-message";
-import { feedbackRouter } from "./src/routes/feedback";
-import { foodRouter } from "./src/routes/food";
-import { messageCountRouter } from "./src/routes/message/count";
-import { feedRouter } from "./src/routes/feed";
+import {
+  processMessageRouter,
+  foodRouter,
+  messageCountRouter,
+  feedRouter,
+} from "./src/routes";
 
 // Custom type declaration for request
 declare global {
@@ -74,7 +75,6 @@ app.use(authMiddleware());
 
 // Routes
 app.use(processMessageRouter);
-app.use(feedbackRouter);
 app.use(foodRouter);
 app.use(messageCountRouter);
 app.use(feedRouter);
