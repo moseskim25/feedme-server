@@ -4,11 +4,7 @@ import { createUser } from "@/src/services/user";
 
 const createUserController = async (req: Request, res: Response) => {
   try {
-    console.log("Creating user");
-
     const userId = req.userId as string;
-
-    console.log("User ID", userId);
 
     // Check if user already exists
     const getUser = await supabase

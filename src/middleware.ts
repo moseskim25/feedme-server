@@ -7,7 +7,6 @@ import { Database } from "@/types/supabase.types";
 export function authMiddleware() {
   return async (request: Request, response: Response, next: NextFunction) => {
     try {
-      console.log("called middleware");
       const token = request.headers.authorization?.replace("Bearer ", "");
 
       if (!token) {
@@ -29,9 +28,6 @@ export function authMiddleware() {
       );
 
       const { data, error } = await supabase.auth.getUser();
-
-      console.log('supabase auth getUser')
-      console.log(data)
 
       if (error) {
         console.error("Auth error:", error);

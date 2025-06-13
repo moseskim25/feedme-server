@@ -42,8 +42,6 @@ export const extractFoodsFromMessage = async (message: Tables<"message">) => {
 
     const listOfFoods = content.foods;
 
-    console.log(listOfFoods);
-
     return listOfFoods;
   } catch (error) {
     console.error(error);

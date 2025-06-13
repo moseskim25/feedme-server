@@ -15,6 +15,8 @@ import {
   messageCountRouter,
   feedRouter,
   userRouter,
+  userJobRouter,
+  transcribeRouter,
 } from "./src/routes";
 
 // Custom type declaration for request
@@ -61,10 +63,6 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Setup multer for multipart/form-data
-const upload = multer();
-app.use(upload.any());
-
 app.use(
   cors({
     origin: true,
@@ -80,6 +78,8 @@ app.use(foodRouter);
 app.use(messageCountRouter);
 app.use(feedRouter);
 app.use(userRouter);
+app.use(userJobRouter);
+app.use(transcribeRouter);
 
 const PORT = Number(process.env.PORT) || 3001;
 

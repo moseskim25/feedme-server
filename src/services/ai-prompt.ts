@@ -37,7 +37,7 @@ Guidelines:
    - If no foods or drinks are mentioned, return an empty array.
 
 7. Default Ingredients:
-   - If a food or drink is mentioned with no ingredients, toppings, or add-ins specified, output the item as its base version and state the absence explicitly in the description (e.g., “plain”, “no toppings”, “black”, “unsweetened”).
+   - If a food or drink is mentioned with no ingredients, toppings, or add-ins specified, output the item as its base version and state the absence explicitly in the description (e.g., "plain", "no toppings", "black", "unsweetened").
    - Only list extra ingredients when the user clearly mentions them.
 
 Output Format:  
@@ -76,7 +76,11 @@ Guidelines:
 
 export const generateFeedbackPrompt = (foods: string[]) =>
   `
-This is what I ate today: ${foods.join(", ")}. Please criticize my diet.
+Analyze this daily food intake: ${foods.join(", ")}.
 
-Keep your response max 2 sentences. First say something positive. Then give constructive criticism.
+Provide feedback in 1-2 sentences:
+1. If there's a genuinely positive nutritional aspect, mention it briefly
+2. Identify the SINGLE most critical nutritional gap that would most improve their health (consider: fruits, vegetables, whole grains, protein, fiber, healthy fats)
+
+Focus on the most impactful improvement, not multiple minor issues. Be specific and actionable.
 `;

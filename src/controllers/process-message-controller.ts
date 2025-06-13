@@ -15,7 +15,7 @@ import {
   generateFeedback,
   generateImageDescription,
 } from "@/src/services/ai";
-import { getCountOfMessagesForUserForToday } from "@/src/services/message";
+import { createUserJob, updateUserJob } from "../services/user-job";
 
 interface ProcessMessageBody {
   logicalDate: string;
@@ -27,13 +27,16 @@ const processMessageController = async (
   response: Response
 ) => {
   try {
-    console.log("Processing message");
-
     const userId = request.userId;
     const authToken = request.authToken;
     if (!userId || !authToken) {
       return response.status(401).json({ error: "Unauthorized" });
     }
+
+    const userJob = await createUserJob({
+      user_id: userId,
+      description: "processing message",
+    });
 
     const logicalDate = request.body.logicalDate;
 
@@ -57,12 +60,11 @@ const processMessageController = async (
     const foods = await extractFoodsFromMessage(insertMessage);
 
     const symptoms = await extractSymptomsFromMessage(insertMessage);
+
     await createSymptomEntries(userId, logicalDate, symptoms);
 
     const foodPromises = foods.map(async (food) => {
       const description = await generateImageDescription(food);
-
-      console.log(description);
 
       const foodEntry = await createFoodEntry(
         userId,
@@ -71,10 +73,12 @@ const processMessageController = async (
         description
       );
 
+      // Upload image to R2
       const image = await generateImage(description);
-      const imageUrl = `${userId}/${logicalDate}/${foodEntry.id}.png`;
+      const imageUrl = `food/${food.replace(/ /g, "-").toLowerCase()}.png`;
       await uploadImageToR2(imageUrl, image);
 
+      // Save image R2 key to database
       await updateFoodEntry(foodEntry.id, {
         r2_key: imageUrl,
       });
@@ -84,10 +88,17 @@ const processMessageController = async (
 
     await Promise.all(foodPromises);
 
-    const feedback = await generateFeedback(userId, logicalDate);
-    await insertFeedbackToDatabase(userId, logicalDate, feedback);
+    let feedback = null;
+    if (foods.length > 0) {
+      feedback = await generateFeedback(userId, logicalDate);
+      await insertFeedbackToDatabase(userId, logicalDate, feedback);
+    }
 
     await updateMessageProcessedStatus(insertMessage.id);
+
+    await updateUserJob(userJob.id, {
+      completed_at: new Date().toISOString(),
+    });
 
     return response.status(200).json(feedback);
   } catch (error) {
@@ -96,4 +107,4 @@ const processMessageController = async (
   }
 };
 
-export { processMessageController }; 
+export { processMessageController };

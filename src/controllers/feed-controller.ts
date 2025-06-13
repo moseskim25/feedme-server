@@ -1,7 +1,7 @@
-import { query, Request, Response } from "express";
+import { Request, Response } from "express";
 import { pool } from "@/lib/db";
 
-const LIMIT = 5;
+const LIMIT = 2;
 
 const feedController = async (req: Request, res: Response) => {
   try {
@@ -21,6 +21,11 @@ const feedController = async (req: Request, res: Response) => {
     const feedbackResult = await pool.query(feedbackQuery, [userId, offset]);
 
     const dates = feedbackResult.rows.map((row) => row.logical_date);
+
+    const today = new Date().toISOString().split("T")[0];
+    if (!dates.includes(today) && offset === 0) {
+      dates.unshift(today);
+    }
 
     const foodQuery = `
         SELECT
@@ -49,26 +54,13 @@ const feedController = async (req: Request, res: Response) => {
       { feedback?: any; food?: any[]; symptoms?: any[] }
     > = {};
 
-    for (const feedback of feedbackResult.rows) {
-      if (!data[feedback.logical_date]) {
-        data[feedback.logical_date] = {};
-      }
-
-      data[feedback.logical_date].feedback = feedback.content;
-      data[feedback.logical_date].food = [];
-      data[feedback.logical_date].symptoms = [];
-    }
-
-    for (const food of foodResult.rows) {
-      if (data[food.logical_date].food) {
-        data[food.logical_date].food!.push(food);
-      }
-    }
-
-    for (const symptom of symptomResult.rows) {
-      if (data[symptom.logical_date].symptoms) {
-        data[symptom.logical_date].symptoms!.push(symptom);
-      }
+    for (const date of dates) {
+      data[date] = {
+        feedback: feedbackResult.rows.find((row) => row.logical_date === date)
+          ?.content,
+        food: foodResult.rows.filter((row) => row.logical_date === date),
+        symptoms: symptomResult.rows.filter((row) => row.logical_date === date),
+      };
     }
 
     const noMoreRows = feedbackResult.rows.length < LIMIT;
