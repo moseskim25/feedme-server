@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { Tables, TablesInsert, TablesUpdate } from "@/types/supabase.types";
 
-const createUserJob = async (payload: TablesInsert<"user_job">) => {
+const insertUserJob = async (payload: TablesInsert<"user_job">) => {
   const { data, error } = await supabase
     .from("user_job")
     .insert(payload)
@@ -32,7 +32,11 @@ const updateUserJob = async (
 };
 
 const getUserJob = async (userId: string, filter: Record<string, any> = {}) => {
-  let query = supabase.from("user_job").select("*").eq("user_id", userId);
+  let query = supabase
+    .from("user_job")
+    .select("*")
+    .eq("user_id", userId)
+    .gte("created_at", new Date(Date.now() - 2 * 60 * 1000).toISOString());
 
   // Apply filters
   Object.entries(filter).forEach(([key, value]) => {
@@ -46,4 +50,4 @@ const getUserJob = async (userId: string, filter: Record<string, any> = {}) => {
   return data;
 };
 
-export { createUserJob, updateUserJob, getUserJob };
+export { insertUserJob, updateUserJob, getUserJob };

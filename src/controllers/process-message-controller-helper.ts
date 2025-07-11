@@ -76,7 +76,7 @@ export const createSymptomEntries = async (
   return insertSymptoms.data;
 };
 
-export const createFoodEntry = async (
+export const insertFood = async (
   userId: string,
   logicalDate: string,
   food: string,
@@ -101,11 +101,11 @@ export const createFoodEntry = async (
   return insertFood.data;
 };
 
-export const updateFoodEntry = async (
+export const updateFood = async (
   foodId: Tables<"food">["id"],
   payload: TablesUpdate<"food">
 ) => {
-  const updateFood = await supabase
+  const updateFood = await supabase 
     .from("food")
     .update(payload)
     .eq("id", foodId);

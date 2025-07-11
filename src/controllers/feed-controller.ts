@@ -1,69 +1,108 @@
 import { Request, Response } from "express";
 import { pool } from "@/lib/db";
+import { getUserIdFromRequest } from "@/src/utils/auth";
+
+type FeedData = Record<string, {
+  food: {
+    description: string;
+    r2_key: string;
+    id: number;
+  }[];
+  symptoms: {
+    description: string;
+  }[];
+  food_groups: Array<{
+    name: string;
+    servings: number;
+  }>;
+}>;
+
+type FeedResponse = {
+  data: FeedData;
+  nextOffset: number | null;
+} | {
+  error: string;
+};
 
 const LIMIT = 2;
 
-const feedController = async (req: Request, res: Response) => {
+const feedController = async (req: Request, res: Response<FeedResponse>) => {
   try {
-    const userId = req.userId as string;
+    const userId = getUserIdFromRequest(req);
     const offset = Number(req.query.offset);
-
-    const feedbackQuery = `
-      SELECT 
-        DISTINCT ON (logical_date) * 
-      FROM feedback
-      WHERE user_id = $1
-      ORDER BY logical_date DESC, created_at DESC
-      LIMIT ${LIMIT}
-      OFFSET $2;
-    `;
-
-    const feedbackResult = await pool.query(feedbackQuery, [userId, offset]);
-
-    const dates = feedbackResult.rows.map((row) => row.logical_date);
-
     const today = new Date().toISOString().split("T")[0];
-    if (!dates.includes(today) && offset === 0) {
-      dates.unshift(today);
-    }
 
-    const foodQuery = `
-        SELECT
-            *
+    const query = `
+      WITH date_range AS (
+        SELECT DISTINCT logical_date
         FROM food
         WHERE user_id = $1
-        AND logical_date = ANY($2)
-        AND deleted_at IS NULL
-        ORDER BY logical_date DESC;
-    `;
-
-    const foodResult = await pool.query(foodQuery, [userId, dates]);
-
-    const symptomQuery = `
-        SELECT
-            *
+        ORDER BY logical_date DESC
+        LIMIT ${LIMIT}
+        OFFSET $2
+      ),
+      all_dates AS (
+        SELECT logical_date FROM date_range
+        ${
+          offset === 0
+            ? `UNION SELECT $3::text WHERE $3::text NOT IN (SELECT logical_date FROM date_range)`
+            : ""
+        }
+      ),
+      food_data AS (
+        SELECT logical_date, json_agg(json_build_object('description', description, 'r2_key', r2_key, 'id', id)) as foods
+        FROM food
+        JOIN all_dates USING (logical_date)
+        WHERE user_id = $1 AND deleted_at IS NULL
+        GROUP BY logical_date
+      ),
+      food_group_data AS (
+        SELECT 
+          f.logical_date,
+          json_agg(
+            json_build_object(
+              'name', fg.name,
+              'servings', fgs.servings
+            )
+          ) as food_groups
+        FROM food f
+        JOIN all_dates USING (logical_date)
+        JOIN food_group_serving fgs ON f.id = fgs.food_id
+        JOIN food_group fg ON fgs.food_group_id = fg.id
+        WHERE f.user_id = $1 AND f.deleted_at IS NULL
+        GROUP BY f.logical_date
+      ),
+      symptom_data AS (
+        SELECT logical_date, json_agg(json_build_object('description', description)) as symptoms
         FROM symptom
+        JOIN all_dates USING (logical_date)
         WHERE user_id = $1
-        AND logical_date = ANY($2);
+        GROUP BY logical_date
+      )
+      SELECT 
+        d.logical_date,
+        COALESCE(f.foods, '[]'::json) as foods,
+        COALESCE(s.symptoms, '[]'::json) as symptoms,
+        COALESCE(fg.food_groups, '[]'::json) as food_groups
+      FROM all_dates d
+      LEFT JOIN food_data f USING (logical_date)
+      LEFT JOIN symptom_data s USING (logical_date)
+      LEFT JOIN food_group_data fg USING (logical_date)
+      ORDER BY d.logical_date DESC;
     `;
+    const params = offset === 0 ? [userId, offset, today] : [userId, offset];
+    const result = await pool.query(query, params);
 
-    const symptomResult = await pool.query(symptomQuery, [userId, dates]);
-
-    const data: Record<
-      string,
-      { feedback?: any; food?: any[]; symptoms?: any[] }
-    > = {};
-
-    for (const date of dates) {
-      data[date] = {
-        feedback: feedbackResult.rows.find((row) => row.logical_date === date)
-          ?.content,
-        food: foodResult.rows.filter((row) => row.logical_date === date),
-        symptoms: symptomResult.rows.filter((row) => row.logical_date === date),
+    const data = result.rows.reduce((acc, row) => {
+      acc[row.logical_date] = {
+        food: row.foods,
+        symptoms: row.symptoms,
+        food_groups: row.food_groups,
       };
-    }
+      return acc;
+    }, {});
 
-    const noMoreRows = feedbackResult.rows.length < LIMIT;
+    const noMoreRows = result.rows.length < LIMIT;
     res.status(200).json({
       data,
       nextOffset: noMoreRows ? null : offset + LIMIT,

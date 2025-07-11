@@ -33,7 +33,6 @@ export const extractFoodsFromMessage = async (message: Tables<"message">) => {
     });
 
     const content = completion.output_parsed;
-
     console.log(content);
 
     if (!content) {
@@ -49,30 +48,21 @@ export const extractFoodsFromMessage = async (message: Tables<"message">) => {
   }
 };
 
-export const extractSymptomsFromMessage = async (
-  message: Tables<"message">
-) => {
+export const extractSymptomsFromMessage = async (message: string) => {
   const completion = await openai.responses.parse({
     model: "gpt-4o",
-    input: [
-      {
-        role: message.role as "user" | "system",
-        content: message.content,
-      },
-      { role: "user", content: extractSymptomsPrompt() },
-    ],
+    input: [{ role: "user", content: extractSymptomsPrompt(message) }],
     text: {
       format: zodTextFormat(
         z.object({
           symptoms: z.array(z.string()),
         }),
-        "symptoms"
+        "anything"
       ),
     },
   });
 
   const content = completion.output_parsed;
-
   console.log(content);
 
   if (!content) {
@@ -158,3 +148,58 @@ export const generateFeedback = async (userId: string, logicalDate: string) => {
     throw new Error("Failed to generate feedback");
   }
 };
+
+const extractFoodGroupServings = async (foodDescription: string) => {
+  const { data: foodGroups, error } = await supabase
+    .from("food_group")
+    .select("*");
+
+  if (error) throw error;
+
+  const foodGroupsForPrompt = foodGroups
+    ?.map((foodGroup) => foodGroup.name)
+    .join(", ");
+
+  const completion = await openai.responses.parse({
+    model: "gpt-4o",
+    input: [
+      {
+        role: "user",
+        content: `
+      You are a helpful assistant that extracts the food group and servings from a food item.
+      The description of the food item is ${foodDescription}.
+
+      The food groups are: ${foodGroupsForPrompt}.
+      
+      Return servings as numbers for each applicable food group.
+      Only include food groups that are present in the food item.
+      `,
+      },
+    ],
+    text: {
+      format: zodTextFormat(
+        z.object({
+          servings: z.array(
+            z.object({
+              foodGroup: z.string(),
+              servings: z.number(),
+            })
+          ),
+        }),
+        "foodGroupServings"
+      ),
+    },
+  });
+
+  const content = completion.output_parsed;
+
+  if (!content) {
+    throw new Error("No content received from OpenAI");
+  }
+
+  console.log(content);
+
+  return content.servings;
+};
+
+export { extractFoodGroupServings };

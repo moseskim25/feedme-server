@@ -45,14 +45,21 @@ Output Format:
    - Each description must reflect any defaults (e.g. "plain", "no toppings", "black", "unsweetened")
 `;
 
-export const extractSymptomsPrompt = () => `
-From the user's messages, extract all mentioned symptoms.
+export const extractSymptomsPrompt = (message: string) => `
+From the user's message: "${message}", summarize everything related to physical, mental, or emotional health.
 
 Guidelines:
-1. A symptom is a physical or emotional condition that the user is experiencing. Try to summarize their symptoms concisely but don't remove too many details.
-2. Exclude foods, activities, and general observations that are not symptoms.
-3. Return the symptoms as an array of strings.
-4. If no symptoms are found, return an empty array.
+1. Try to summarize and dissect their message concisely but don't remove too many details.
+2. Exclude foods and drink.
+3. Return your response as an array of strings.
+4. Return an empty array if there's nothing to report.
+
+Examples of what to include:
+- "Had a headache this morning"
+- "Feeling really energetic today" 
+- "My stools were really great"
+- "Slept poorly last night"
+- "Feeling anxious about work"
 `;
 
 export const generateImagePrompt = (food: string) => `
