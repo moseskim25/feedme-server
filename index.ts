@@ -10,7 +10,7 @@ import pino from "pino";
 // Routes
 import { authMiddleware } from "./src/middleware";
 import {
-  processMessageRouter,
+  messageRouter,
   foodRouter,
   messageCountRouter,
   feedRouter,
@@ -73,7 +73,7 @@ app.use(
 app.use(authMiddleware());
 
 // Routes
-app.use(processMessageRouter);
+app.use(messageRouter);
 app.use(foodRouter);
 app.use(messageCountRouter);
 app.use(feedRouter);

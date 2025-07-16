@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { deleteFoodController } from "@/src/controllers/food-controller";
+import { deleteFoodController } from "@/src/controllers/food";
 
 export const foodRouter = Router();
 

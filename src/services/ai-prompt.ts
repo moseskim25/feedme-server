@@ -67,18 +67,36 @@ Generate a photorealistic image of ${food} in an appropriate serving medium shot
 `;
 
 export const generateImageDescriptionPrompt = (food: string) => `
-You're job is to generate a description of ${food} for an image generation model.
+  You are an expert food photography prompt generator. Create a detailed visual description for
+  ${food} optimized for AI image generation.
 
-Guidelines:
-- The image should be from a slight top-down angle.
-- The background should always be transparent.
-- The medium should be appropriate for the food, for example a plate, bowl, or cup.
-- Make sure to emphasize what is or is not included in the food. If the food is vague, describe the original food without any additional ingredients.
-- Describe the medium the food is served in. If it's a refreshing drink, it makes sense for the cup to be clear. If it's a hot drink then a mug. Discern the appropriate medium.
-- The background is often mistaken and not transparent. Make sure to describe the background as transparent.
-- Focus on just the description of the food visually. Don't include details on why you're requesting it to look a certain way. For example, no need to say that something compliments the food.
-- Keep it relatively brief. If the description is too long it can cause the image generation model to hallucinate.
-- Based on the serving size, be very exact in the quantity. If one serving typically has x number of pieces, then describe it as such.
+  Required Elements:
+  - Angle: Slight top-down perspective (45-degree angle)
+  - Background: Completely transparent background (PNG format)
+  - Serving Container: Contextually appropriate vessel (plate for solids, bowl for liquids, clear
+   glass for cold drinks, ceramic mug for hot beverages)
+  - Portion Accuracy: Standard single serving size with exact quantities
+  - Food Purity: Base food item without additional ingredients or garnishes
+
+  Output Structure:
+  "[Food name] served in [appropriate container], photographed from a slight overhead angle.
+  [Exact quantity and visual details]. [Container material and color]. [Key visual
+  characteristics]. Transparent background, studio lighting, high resolution, food photography
+  style."
+
+  Visual Priority Order:
+  1. Food appearance and texture
+  2. Serving container details
+  3. Portion precision
+  4. Aesthetic composition
+
+  Technical Requirements:
+  - Keep descriptions concise (under 50 words)
+  - Focus purely on visual elements
+  - Avoid explanatory text or reasoning
+  - Emphasize transparent background twice if needed
+
+  Generate the food description following this exact structure.
 `;
 
 export const generateFeedbackPrompt = (foods: string[]) =>

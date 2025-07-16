@@ -1,8 +1,5 @@
-import { openai } from "@/lib/openai";
 import { uploadToR2 } from "@/lib/r2";
-import { getCurrentTime } from "@/lib/utils/date.utils";
-import { Database, Tables, TablesUpdate } from "@/types/supabase.types";
-import { SupabaseClient } from "@supabase/supabase-js";
+import { Tables, TablesUpdate } from "@/types/supabase.types";
 import { ImagesResponse } from "openai/resources/images";
 import { supabase } from "@/lib/supabase";
 
@@ -80,7 +77,8 @@ export const insertFood = async (
   userId: string,
   logicalDate: string,
   food: string,
-  image_prompt: string
+  image_prompt: string,
+  r2_key?: string
 ) => {
   const insertFood = await supabase
     .from("food")
@@ -89,6 +87,7 @@ export const insertFood = async (
       logical_date: logicalDate,
       description: food,
       image_prompt,
+      ...(r2_key && { r2_key }),
     })
     .select()
     .single();
@@ -105,7 +104,7 @@ export const updateFood = async (
   foodId: Tables<"food">["id"],
   payload: TablesUpdate<"food">
 ) => {
-  const updateFood = await supabase 
+  const updateFood = await supabase
     .from("food")
     .update(payload)
     .eq("id", foodId);

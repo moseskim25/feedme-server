@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getUserJobController } from "@/src/controllers/user-job-controller";
+import { getUserJobController } from "@/src/controllers/user/job";
 
 export const userJobRouter = Router();
 

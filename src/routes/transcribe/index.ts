@@ -1,6 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
-import { transcribeController } from "@/src/controllers/transcribe-controller";
+import { transcribeController } from "@/src/controllers/transcribe";
 
 const upload = multer({ storage: multer.memoryStorage() }); // file lives in RAM
 export const transcribeRouter = Router();

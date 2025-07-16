@@ -1,4 +1,4 @@
-export { processMessageRouter } from "./process-message";
+export { messageRouter } from "./message";
 export { foodRouter } from "./food";
 export { messageCountRouter } from "./message/count";
 export { feedRouter } from "./feed";

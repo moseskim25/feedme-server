@@ -32,4 +32,19 @@ const deleteFood = async (id: Tables<"food">["id"]) => {
   return data;
 };
 
-export { deleteFood, getFoodForUserOnDate };
+const getFoodByName = async (food: string) => {
+  const { data, error } = await supabase
+    .from("food")
+    .select("*")
+    .eq("description", food)
+    .is("deleted_at", null)
+    .not("r2_key", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  if (error) throw error;
+
+  return data?.[0] || null;
+};
+
+export { deleteFood, getFoodForUserOnDate, getFoodByName };

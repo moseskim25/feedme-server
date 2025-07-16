@@ -3,23 +3,21 @@ import {
   uploadImageToR2,
   insertFood,
   createSymptomEntries,
-  updateFood,
-  insertFeedbackToDatabase,
   updateMessageProcessedStatus,
   recordMessageInSupabase,
-} from "@/src/controllers/process-message-controller-helper";
+} from "./helper";
 import {
   extractFoodsFromMessage,
   extractSymptomsFromMessage,
   generateImage,
-  generateFeedback,
   generateImageDescription,
   extractFoodGroupServings,
 } from "@/src/services/ai";
-import { insertUserJob, updateUserJob } from "../services/user-job";
-import { insertFoodGroupServings } from "../services/food-group-serving";
-import { getAllFoodGroups } from "../services/food-group";
-import { getUserIdFromRequest } from "../utils/auth";
+import { insertUserJob, updateUserJob } from "@/src/services/user-job";
+import { insertFoodGroupServings } from "@/src/services/food-group-serving";
+import { getAllFoodGroups } from "@/src/services/food-group";
+import { getFoodByName } from "@/src/services/food";
+import { getUserIdFromRequest } from "@/src/utils/auth";
 
 interface ProcessMessageBody {
   logicalDate: string;
@@ -46,42 +44,48 @@ const processMessageController = async (
       request.body.message
     );
 
-    // const countOfMessagesForUserForToday =
-    //   await getCountOfMessagesForUserForToday(userId);
-
-    // console.log(countOfMessagesForUserForToday);
-
-    // if (countOfMessagesForUserForToday > 10) {
-    //   return response.status(400).json({
-    //     error: "You have reached the maximum number of messages for today",
-    //   });
-    // }
+    console.log(`Message received: ${request.body.message}`);
 
     const foods = await extractFoodsFromMessage(insertMessage);
 
+    console.log(`Foods extracted: ${foods}`);
+
     const symptoms = await extractSymptomsFromMessage(request.body.message);
+
+    console.log(`Symptoms extracted: ${symptoms}`);
 
     await createSymptomEntries(userId, logicalDate, symptoms);
 
     const foodPromises = foods.map(async (food) => {
-      const description = await generateImageDescription(food);
+      const existingFood = await getFoodByName(food);
+
+      let description: string;
+      let imageUrl: string;
+
+      if (existingFood) {
+        description =
+          existingFood.description || existingFood.image_prompt || "";
+        imageUrl = existingFood.r2_key!;
+      } else {
+        description = await generateImageDescription(food);
+        const image = await generateImage(description);
+        imageUrl = `food/${food.replace(/ /g, "-").toLowerCase()}.png`;
+        await uploadImageToR2(imageUrl, image);
+      }
+
+      console.log(`Description: ${description}`);
 
       const foodEntry = await insertFood(
         userId,
         logicalDate,
         food,
-        description
+        description,
+        imageUrl
       );
 
-      const image = await generateImage(description);
-      const imageUrl = `food/${food.replace(/ /g, "-").toLowerCase()}.png`;
-      await uploadImageToR2(imageUrl, image);
-
-      await updateFood(foodEntry.id, {
-        r2_key: imageUrl,
-      });
-
       const foodGroupServings = await extractFoodGroupServings(description);
+
+      console.log(`Food group servings: ${foodGroupServings}`);
 
       const allFoodGroups = await getAllFoodGroups();
       const foodGroupMap = new Map(allFoodGroups.map((fg) => [fg.name, fg.id]));
@@ -118,7 +122,7 @@ const processMessageController = async (
       completed_at: new Date().toISOString(),
     });
 
-    return response.status(200);
+    return response.status(200).json({ success: true });
   } catch (error) {
     console.error(error);
     return response.status(500).json({ error: "Internal server error" });

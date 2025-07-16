@@ -30,7 +30,7 @@ const feedController = async (req: Request, res: Response<FeedResponse>) => {
   try {
     const userId = getUserIdFromRequest(req);
     const offset = Number(req.query.offset);
-    const today = new Date().toISOString().split("T")[0];
+    const today = req.query.today as string;
 
     const query = `
       WITH date_range AS (
@@ -44,7 +44,7 @@ const feedController = async (req: Request, res: Response<FeedResponse>) => {
       all_dates AS (
         SELECT logical_date FROM date_range
         ${
-          offset === 0
+          offset === 0 && today
             ? `UNION SELECT $3::text WHERE $3::text NOT IN (SELECT logical_date FROM date_range)`
             : ""
         }
@@ -58,19 +58,26 @@ const feedController = async (req: Request, res: Response<FeedResponse>) => {
       ),
       food_group_data AS (
         SELECT 
-          f.logical_date,
+          logical_date,
           json_agg(
             json_build_object(
-              'name', fg.name,
-              'servings', fgs.servings
+              'name', name,
+              'servings', total_servings
             )
           ) as food_groups
-        FROM food f
-        JOIN all_dates USING (logical_date)
-        JOIN food_group_serving fgs ON f.id = fgs.food_id
-        JOIN food_group fg ON fgs.food_group_id = fg.id
-        WHERE f.user_id = $1 AND f.deleted_at IS NULL
-        GROUP BY f.logical_date
+        FROM (
+          SELECT 
+            f.logical_date,
+            fg.name,
+            SUM(fgs.servings) as total_servings
+          FROM food f
+          JOIN all_dates USING (logical_date)
+          JOIN food_group_serving fgs ON f.id = fgs.food_id
+          JOIN food_group fg ON fgs.food_group_id = fg.id
+          WHERE f.user_id = $1 AND f.deleted_at IS NULL
+          GROUP BY f.logical_date, fg.name
+        ) summed_data
+        GROUP BY logical_date
       ),
       symptom_data AS (
         SELECT logical_date, json_agg(json_build_object('description', description)) as symptoms
@@ -90,7 +97,7 @@ const feedController = async (req: Request, res: Response<FeedResponse>) => {
       LEFT JOIN food_group_data fg USING (logical_date)
       ORDER BY d.logical_date DESC;
     `;
-    const params = offset === 0 ? [userId, offset, today] : [userId, offset];
+    const params = offset === 0 && today ? [userId, offset, today] : [userId, offset];
     const result = await pool.query(query, params);
 
     const data = result.rows.reduce((acc, row) => {
