@@ -152,13 +152,13 @@ export const generateFeedback = async (userId: string, logicalDate: string) => {
 const extractFoodGroupServings = async (foodDescription: string) => {
   const { data: foodGroups, error } = await supabase
     .from("food_group")
-    .select("name");
+    .select("name, description");
 
   if (error) throw error;
 
   const foodGroupsForPrompt = foodGroups
-    ?.map((foodGroup) => foodGroup.name)
-    .join(", ");
+    ?.map((foodGroup) => `${foodGroup.name}: ${foodGroup.description}`)
+    .join("\n");
 
   const completion = await openai.responses.parse({
     model: "gpt-4o",
@@ -169,7 +169,8 @@ const extractFoodGroupServings = async (foodDescription: string) => {
       You are a nutrition analysis assistant for a food tracking app.
       Given a natural language description of a meal, analyze it and:
 
-      Identify all food groups present in the meal, choosing only from the following list: ${foodGroupsForPrompt}.
+      Identify all food groups present in the meal, choosing only from the following list: 
+      ${foodGroupsForPrompt}.
 
       Estimate the number of servings for each food group based only on the ingredients explicitly mentioned. Do not infer or assume additional ingredients.
 
