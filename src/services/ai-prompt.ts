@@ -1,5 +1,3 @@
-import { getCurrentTime } from "@/lib/utils/date.utils";
-
 export const extractFoodsPrompt = (message: string) => `
 Task:  
 Extract and generate a structured list of all foods and drinks mentioned in the following message: "${message}". Include quantities and descriptions.
@@ -62,41 +60,32 @@ Examples of what to include:
 - "Feeling anxious about work"
 `;
 
-export const generateImagePrompt = (food: string) => `
-Generate a photorealistic image of ${food} in an appropriate serving medium shot from a slight top-down angle.
-`;
 
-export const generateImageDescriptionPrompt = (food: string) => `
-  You are an expert food photography prompt generator. Create a detailed visual description for
-  ${food} optimized for AI image generation.
+export const generateImageDescriptionPrompt = () => `
+You are an expert food photography prompt generator. Create a detailed visual description optimized for AI image generation.
 
-  Required Elements:
-  - Angle: Slight top-down perspective (45-degree angle)
-  - Background: Completely transparent background (PNG format)
-  - Serving Container: Contextually appropriate vessel (plate for solids, bowl for liquids, clear
-   glass for cold drinks, ceramic mug for hot beverages)
-  - Portion Accuracy: Standard single serving size with exact quantities
-  - Food Purity: Base food item without additional ingredients or garnishes
+Required Elements:
+- Angle: Slight top-down perspective (45-degree angle)
+- Background: Transparent PNG format (no shadows, no reflections)
+- Serving Container: Use a context-appropriate vessel (plate for solids, bowl for liquids, clear glass for cold drinks, ceramic mug for hot beverages). If the food is naturally standalone (e.g., whole fruits, vegetables, pastries), omit the container entirely.
+- Portion Accuracy: Single standard serving size with exact quantities
+- Food Purity: Base food only, no added ingredients, garnishes, or decorative cuts
+- Cooking State: Specify if the food is cooked or raw. By default, meat and seafood should appear fully cooked unless “raw” is explicitly stated.
 
-  Output Structure:
-  "[Food name] served in [appropriate container], photographed from a slight overhead angle.
-  [Exact quantity and visual details]. [Container material and color]. [Key visual
-  characteristics]. Transparent background, studio lighting, high resolution, food photography
-  style."
+Output Structure:
+"[Food name], [cooked/raw], [served in/without] [appropriate container if required], photographed from a slight overhead angle. [Exact quantity and visual details]. [Container material and color if used]. [Key visual characteristics]. Transparent background, soft diffused studio lighting, high resolution, food photography style. Transparent PNG, centered composition."
 
-  Visual Priority Order:
-  1. Food appearance and texture
-  2. Serving container details
-  3. Portion precision
-  4. Aesthetic composition
+Visual Priority Order:
+1. Food appearance and texture (emphasize cooked state if applicable)
+2. Serving container details (if present)
+3. Portion precision
+4. Centered, aesthetic composition
 
-  Technical Requirements:
-  - Keep descriptions concise (under 50 words)
-  - Focus purely on visual elements
-  - Avoid explanatory text or reasoning
-  - Emphasize transparent background twice if needed
+Technical Requirements:
+- Focus purely on visual elements
+- Emphasize transparent PNG background twice
+- Strict food photography style
 
-  Generate the food description following this exact structure.
 `;
 
 export const generateFeedbackPrompt = (foods: string[]) =>
@@ -109,3 +98,21 @@ Provide feedback in 1-2 sentences:
 
 Focus on the most impactful improvement, not multiple minor issues. Be specific and actionable.
 `;
+
+const extractFoodGroupsPrompt = (foodGroups: string) => `
+You are a nutrition analysis assistant for a food tracking app.
+Given a natural language description of a meal, analyze it and:
+
+Identify all food groups present in the meal, choosing only from the following list: 
+${foodGroups}.
+
+Estimate the number of servings for each food group based only on the ingredients explicitly mentioned. Do not infer or assume additional ingredients.
+
+Important Instructions:
+- Only analyze foods explicitly mentioned in the input.
+- Do not infer or assume any missing ingredients (e.g., sauces, sides, drinks).
+- If a food group is not present in the description, omit it from the output.
+- Return JSON only with no extra commentary.
+`;
+
+export { extractFoodGroupsPrompt };

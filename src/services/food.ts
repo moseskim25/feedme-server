@@ -1,5 +1,16 @@
+import { pool } from "@/lib/db";
 import { supabase } from "@/lib/supabase";
 import { Tables } from "@/types/supabase.types";
+import { getFoodById as getFoodByIdSql } from "@/generated/prisma/sql";
+import { prisma } from "@/lib/prisma";
+
+type FoodWithServings = {
+  id: number;
+  description: string | null;
+  r2_key: string | null;
+  name: string | null;
+  servings: string;
+};
 
 const getFoodForUserOnDate = async (
   userId: Tables<"user">["id"],
@@ -47,4 +58,10 @@ const getFoodByName = async (food: string) => {
   return data?.[0] || null;
 };
 
-export { deleteFood, getFoodForUserOnDate, getFoodByName };
+
+const getFoodById = async (id: Tables<"food">["id"]): Promise<getFoodByIdSql.Result[]> => {
+  const data = await prisma.$queryRawTyped(getFoodByIdSql(id));
+  return data;
+};
+
+export { deleteFood, getFoodForUserOnDate, getFoodByName, getFoodById };

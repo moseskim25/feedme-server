@@ -1,5 +1,3 @@
-// Helper functions to extract information from messages
-
 import { openai } from "@/lib/openai";
 import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
@@ -8,6 +6,7 @@ import {
   extractSymptomsPrompt,
   generateFeedbackPrompt,
   generateImageDescriptionPrompt,
+  extractFoodGroupsPrompt,
 } from "./ai-prompt";
 import { Tables } from "@/types/supabase.types";
 import { supabase } from "@/lib/supabase";
@@ -18,7 +17,7 @@ export const extractFoodsFromMessage = async (message: Tables<"message">) => {
       model: "gpt-4o",
       input: [
         {
-          role: "user",
+          role: "system",
           content: extractFoodsPrompt(message.content),
         },
       ],
@@ -77,7 +76,13 @@ export const extractSymptomsFromMessage = async (message: string) => {
 export const generateImageDescription = async (food: string) => {
   const completion = await openai.chat.completions.create({
     model: "gpt-4o",
-    messages: [{ role: "user", content: generateImageDescriptionPrompt(food) }],
+    messages: [
+      { role: "system", content: generateImageDescriptionPrompt() },
+      {
+        role: "user",
+        content: food,
+      },
+    ],
   });
 
   const content = completion.choices[0].message.content;
@@ -149,6 +154,18 @@ export const generateFeedback = async (userId: string, logicalDate: string) => {
   }
 };
 
+const extractFoodGroupsFormat = zodTextFormat(
+  z.object({
+    servings: z.array(
+      z.object({
+        foodGroup: z.string(),
+        servings: z.number(),
+      })
+    ),
+  }),
+  "foodGroupServings"
+);
+
 const extractFoodGroupServings = async (foodDescription: string) => {
   const { data: foodGroups, error } = await supabase
     .from("food_group")
@@ -165,21 +182,7 @@ const extractFoodGroupServings = async (foodDescription: string) => {
     input: [
       {
         role: "system",
-        content: `
-      You are a nutrition analysis assistant for a food tracking app.
-      Given a natural language description of a meal, analyze it and:
-
-      Identify all food groups present in the meal, choosing only from the following list: 
-      ${foodGroupsForPrompt}.
-
-      Estimate the number of servings for each food group based only on the ingredients explicitly mentioned. Do not infer or assume additional ingredients.
-
-      Important Instructions:
-      - Only analyze foods explicitly mentioned in the input.
-      - Do not infer or assume any missing ingredients (e.g., sauces, sides, drinks).
-      - If a food group is not present in the description, omit it from the output.
-      - Return JSON only with no extra commentary.
-      `,
+        content: extractFoodGroupsPrompt(foodGroupsForPrompt),
       },
       {
         role: "user",
@@ -187,17 +190,7 @@ const extractFoodGroupServings = async (foodDescription: string) => {
       },
     ],
     text: {
-      format: zodTextFormat(
-        z.object({
-          servings: z.array(
-            z.object({
-              foodGroup: z.string(),
-              servings: z.number(),
-            })
-          ),
-        }),
-        "foodGroupServings"
-      ),
+      format: extractFoodGroupsFormat,
     },
   });
 
@@ -205,9 +198,7 @@ const extractFoodGroupServings = async (foodDescription: string) => {
 
   console.log(content);
 
-  if (!content) {
-    throw new Error("No content received from OpenAI");
-  }
+  if (!content) throw new Error("No content received from OpenAI");
 
   return content.servings;
 };

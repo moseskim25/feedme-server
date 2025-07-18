@@ -9,6 +9,8 @@ export function authMiddleware() {
     try {
       const token = request.headers.authorization?.replace("Bearer ", "");
 
+
+
       if (!token) {
         return response
           .status(401)
