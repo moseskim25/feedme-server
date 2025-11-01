@@ -1,8 +1,5 @@
 import { supabase } from "@/lib/supabase";
 import { Tables } from "@/types/supabase.types";
-import { prisma } from "@/lib/prisma";
-import { getFoodById as getFoodByIdQuery } from "@/generated/prisma/sql";
-
 const getFoodForUserOnDate = async (
   userId: Tables<"user">["id"],
   logicalDate: string,
