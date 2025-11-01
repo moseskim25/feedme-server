@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { Tables } from "@/types/supabase.types";
 
-const insertFoodGroupServings = async (
+const insertServings = async (
   userId: string,
   servings: Array<{ food_id: number; food_group_id: number; servings: number }>
 ) => {
@@ -13,7 +13,7 @@ const insertFoodGroupServings = async (
   }));
 
   const { data, error } = await supabase
-    .from("food_group_serving")
+    .from("serving")
     .insert(insertData)
     .select();
 
@@ -24,4 +24,5 @@ const insertFoodGroupServings = async (
   return data;
 };
 
-export { insertFoodGroupServings };
+export { insertServings };
+

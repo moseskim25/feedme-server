@@ -11,9 +11,8 @@ import pino from "pino";
 import { authMiddleware } from "./src/middleware";
 import {
   messageRouter,
-  foodRouter,
   messageCountRouter,
-  feedRouter,
+  foodRouter,
   userRouter,
   userJobRouter,
   transcribeRouter,
@@ -74,9 +73,8 @@ app.use(authMiddleware());
 
 // Routes
 app.use(messageRouter);
-app.use(foodRouter);
 app.use(messageCountRouter);
-app.use(feedRouter);
+app.use(foodRouter);
 app.use(userRouter);
 app.use(userJobRouter);
 app.use(transcribeRouter);

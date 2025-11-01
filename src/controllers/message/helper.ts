@@ -48,7 +48,7 @@ export const recordMessageInSupabase = async (
   return insertMessage.data;
 };
 
-export const createSymptomEntries = async (
+export const insertSymptomEntries = async (
   userId: string,
   logicalDate: string,
   symptoms: string[]
@@ -73,10 +73,10 @@ export const createSymptomEntries = async (
   return insertSymptoms.data;
 };
 
-export const insertFood = async (
+export const insertFoodEntry = async (
   userId: string,
   logicalDate: string,
-  food: string,
+  foodDescription: string,
   image_prompt: string,
   r2_key?: string
 ) => {
@@ -85,7 +85,7 @@ export const insertFood = async (
     .insert({
       user_id: userId,
       logical_date: logicalDate,
-      description: food,
+      description: foodDescription,
       image_prompt,
       ...(r2_key && { r2_key }),
     })
@@ -93,14 +93,16 @@ export const insertFood = async (
     .single();
 
   if (insertFood.error) {
-    console.error(`Failed to insert food: ${JSON.stringify(insertFood)}`);
-    throw new Error(`Failed to insert food: ${JSON.stringify(insertFood)}`);
+    console.error(`Failed to insert food entry: ${JSON.stringify(insertFood)}`);
+    throw new Error(
+      `Failed to insert food entry: ${JSON.stringify(insertFood)}`
+    );
   }
 
   return insertFood.data;
 };
 
-export const updateFood = async (
+export const updateFoodEntry = async (
   foodId: Tables<"food">["id"],
   payload: TablesUpdate<"food">
 ) => {
@@ -110,31 +112,16 @@ export const updateFood = async (
     .eq("id", foodId);
 
   if (updateFood.error) {
-    console.error(`Failed to update food: ${JSON.stringify(updateFood)}`);
-    throw new Error(`Failed to update food: ${JSON.stringify(updateFood)}`);
+    console.error(`Failed to update food entry: ${JSON.stringify(updateFood)}`);
+    throw new Error(
+      `Failed to update food entry: ${JSON.stringify(updateFood)}`
+    );
   }
 
   return updateFood.data;
 };
 
-export const insertFeedbackToDatabase = async (
-  userId: string,
-  logicalDate: string,
-  feedback: string
-) => {
-  const insertFeedback = await supabase.from("feedback").insert({
-    user_id: userId,
-    logical_date: logicalDate,
-    content: feedback,
-  });
 
-  if (insertFeedback.error) {
-    console.error(insertFeedback.error);
-    throw new Error("Failed to insert feedback");
-  }
-
-  return insertFeedback.data;
-};
 
 export const updateMessageProcessedStatus = async (
   messageId: Tables<"message">["id"]

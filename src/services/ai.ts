@@ -11,7 +11,7 @@ import {
 import { Tables } from "@/types/supabase.types";
 import { supabase } from "@/lib/supabase";
 
-export const extractFoodsFromMessage = async (message: Tables<"message">) => {
+export const extractFoodFromMessage = async (message: Tables<"message">) => {
   try {
     const completion = await openai.responses.parse({
       model: "gpt-4o",
@@ -115,16 +115,16 @@ export const generateImage = async (description: string) => {
 };
 
 export const generateFeedback = async (userId: string, logicalDate: string) => {
-  const foods = await supabase
+  const foodEntries = await supabase
     .from("food")
     .select("*")
     .eq("user_id", userId)
     .eq("logical_date", logicalDate)
     .order("created_at", { ascending: true });
 
-  if (foods.error || !foods.data) {
-    console.error(foods.error);
-    throw new Error("Failed to get foods");
+  if (foodEntries.error || !foodEntries.data) {
+    console.error(foodEntries.error);
+    throw new Error("Failed to get food entries");
   }
 
   try {
@@ -134,7 +134,7 @@ export const generateFeedback = async (userId: string, logicalDate: string) => {
         {
           role: "user",
           content: generateFeedbackPrompt(
-            foods.data.map((food) => food.description as string)
+            foodEntries.data.map((entry) => entry.description as string)
           ),
         },
       ],
@@ -163,10 +163,10 @@ const extractFoodGroupsFormat = zodTextFormat(
       })
     ),
   }),
-  "foodGroupServings"
+  "servings"
 );
 
-const extractFoodGroupServings = async (foodDescription: string) => {
+const extractServings = async (foodDescription: string) => {
   const { data: foodGroups, error } = await supabase
     .from("food_group")
     .select("name, description");
@@ -203,4 +203,4 @@ const extractFoodGroupServings = async (foodDescription: string) => {
   return content.servings;
 };
 
-export { extractFoodGroupServings };
+export { extractServings };

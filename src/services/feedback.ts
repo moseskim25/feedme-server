@@ -1,14 +1,13 @@
 import { openai } from "@/lib/openai";
-import { supabase } from "@/lib/supabase";
 import { Tables } from "@/types/supabase.types";
 import { getFoodForUserOnDate } from "./food";
 
 const generateFeedback = async (
   userId: Tables<"user">["id"],
-  logicalDate: string
+  logicalDate: string,
 ) => {
   try {
-    const foods = await getFoodForUserOnDate(userId, logicalDate);
+    const foodEntries = await getFoodForUserOnDate(userId, logicalDate);
 
     const feedbackChatCompletion = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -16,7 +15,7 @@ const generateFeedback = async (
         {
           role: "user",
           content: generateFeedbackPrompt(
-            foods.map((food) => food.description as string)
+            foodEntries.map((entry) => entry.description as string),
           ),
         },
       ],
@@ -36,9 +35,9 @@ const generateFeedback = async (
   }
 };
 
-const generateFeedbackPrompt = (foods: string[]) =>
+const generateFeedbackPrompt = (foodDescriptions: string[]) =>
   `
-This is what I ate today: ${foods.join(", ")}. Please criticize my diet.
+This is what I consumed today: ${foodDescriptions.join(", ")}. Please criticize my intake.
 
 Keep your response max 2 sentences. First say something positive. Then give constructive criticism.
 `;

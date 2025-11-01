@@ -1,20 +1,20 @@
 import { Request, Response } from "express";
 import {
   uploadImageToR2,
-  insertFood,
-  createSymptomEntries,
+  insertFoodEntry,
+  insertSymptomEntries,
   updateMessageProcessedStatus,
   recordMessageInSupabase,
 } from "./helper";
 import {
-  extractFoodsFromMessage,
+  extractFoodFromMessage,
   extractSymptomsFromMessage,
   generateImage,
   generateImageDescription,
-  extractFoodGroupServings,
+  extractServings,
 } from "@/src/services/ai";
 import { insertUserJob, updateUserJob } from "@/src/services/user-job";
-import { insertFoodGroupServings } from "@/src/services/food-group-serving";
+import { insertServings } from "@/src/services/serving";
 import { getAllFoodGroups } from "@/src/services/food-group";
 import { getFoodByName } from "@/src/services/food";
 import { getUserIdFromRequest } from "@/src/utils/auth";
@@ -44,53 +44,50 @@ const processMessageController = async (
       request.body.message
     );
 
-    console.log(`Message received: ${request.body.message}`);
-
-    const foods = await extractFoodsFromMessage(insertMessage);
-
-    console.log(`Foods extracted: ${foods}`);
+    
+    const foodEntries = await extractFoodFromMessage(insertMessage);
 
     const symptoms = await extractSymptomsFromMessage(request.body.message);
 
-    console.log(`Symptoms extracted: ${symptoms}`);
+    await insertSymptomEntries(userId, logicalDate, symptoms);
 
-    await createSymptomEntries(userId, logicalDate, symptoms);
-
-    const foodPromises = foods.map(async (food) => {
-      const existingFood = await getFoodByName(food);
+    const foodEntryPromises = foodEntries.map(async (foodItem) => {
+      const existingFoodEntry = await getFoodByName(foodItem);
 
       let description: string;
       let imageUrl: string;
 
-      if (existingFood) {
+      if (existingFoodEntry) {
         description =
-          existingFood.description || existingFood.image_prompt || "";
-        imageUrl = existingFood.r2_key!;
+          existingFoodEntry.description ||
+          existingFoodEntry.image_prompt ||
+          "";
+        imageUrl = existingFoodEntry.r2_key!;
       } else {
-        description = await generateImageDescription(food);
+        description = await generateImageDescription(foodItem);
         const image = await generateImage(description);
-        imageUrl = `food/${food.replace(/ /g, "-").toLowerCase()}.png`;
+        imageUrl = `food/${foodItem.replace(/ /g, "-").toLowerCase()}.png`;
         await uploadImageToR2(imageUrl, image);
       }
 
       console.log(`Description: ${description}`);
 
-      const foodEntry = await insertFood(
+      const foodEntry = await insertFoodEntry(
         userId,
         logicalDate,
-        food,
+        foodItem,
         description,
         imageUrl
       );
 
-      const foodGroupServings = await extractFoodGroupServings(description);
+      const servings = await extractServings(description);
 
-      console.log(`Food group servings: ${foodGroupServings}`);
+      console.log(`Servings: ${servings}`);
 
       const allFoodGroups = await getAllFoodGroups();
       const foodGroupMap = new Map(allFoodGroups.map((fg) => [fg.name, fg.id]));
 
-      const servingsData = foodGroupServings
+      const servingsData = servings
         .map((serving) => {
           const foodGroupId = foodGroupMap.get(serving.foodGroup);
           if (!foodGroupId) {
@@ -108,13 +105,13 @@ const processMessageController = async (
         .filter((serving) => serving !== null);
 
       if (servingsData.length > 0) {
-        await insertFoodGroupServings(userId, servingsData);
+        await insertServings(userId, servingsData);
       }
 
       return foodEntry;
     });
 
-    await Promise.all(foodPromises);
+    await Promise.all(foodEntryPromises);
 
     await updateMessageProcessedStatus(insertMessage.id);
 

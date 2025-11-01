@@ -7,44 +7,45 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
-      feedback: {
+      _prisma_migrations: {
         Row: {
-          content: string
-          created_at: string
-          id: number
-          logical_date: string
-          user_id: string
+          applied_steps_count: number
+          checksum: string
+          finished_at: string | null
+          id: string
+          logs: string | null
+          migration_name: string
+          rolled_back_at: string | null
+          started_at: string
         }
         Insert: {
-          content: string
-          created_at?: string
-          id?: number
-          logical_date: string
-          user_id: string
+          applied_steps_count?: number
+          checksum: string
+          finished_at?: string | null
+          id: string
+          logs?: string | null
+          migration_name: string
+          rolled_back_at?: string | null
+          started_at?: string
         }
         Update: {
-          content?: string
-          created_at?: string
-          id?: number
-          logical_date?: string
-          user_id?: string
+          applied_steps_count?: number
+          checksum?: string
+          finished_at?: string | null
+          id?: string
+          logs?: string | null
+          migration_name?: string
+          rolled_back_at?: string | null
+          started_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "summary_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       food: {
         Row: {
@@ -54,6 +55,7 @@ export type Database = {
           id: number
           image_prompt: string | null
           logical_date: string
+          message_id: number | null
           r2_key: string | null
           user_id: string
         }
@@ -64,6 +66,7 @@ export type Database = {
           id?: number
           image_prompt?: string | null
           logical_date: string
+          message_id?: number | null
           r2_key?: string | null
           user_id: string
         }
@@ -74,10 +77,18 @@ export type Database = {
           id?: number
           image_prompt?: string | null
           logical_date?: string
+          message_id?: number | null
           r2_key?: string | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "food_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "message"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "food_user_id_fkey"
             columns: ["user_id"]
@@ -92,23 +103,56 @@ export type Database = {
           created_at: string
           description: string | null
           id: number
+          is_essential: boolean
           name: string
         }
         Insert: {
           created_at?: string
           description?: string | null
           id?: number
+          is_essential?: boolean
           name: string
         }
         Update: {
           created_at?: string
           description?: string | null
           id?: number
+          is_essential?: boolean
           name?: string
         }
         Relationships: []
       }
-      food_group_serving: {
+      message: {
+        Row: {
+          content: string
+          created_at: string
+          id: number
+          is_processed: boolean | null
+          logical_date: string | null
+          role: string
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: number
+          is_processed?: boolean | null
+          logical_date?: string | null
+          role: string
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: number
+          is_processed?: boolean | null
+          logical_date?: string | null
+          role?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      serving: {
         Row: {
           created_at: string
           food_group_id: number
@@ -156,36 +200,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      message: {
-        Row: {
-          content: string
-          created_at: string
-          id: number
-          is_processed: boolean | null
-          logical_date: string | null
-          role: string
-          user_id: string | null
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          id?: number
-          is_processed?: boolean | null
-          logical_date?: string | null
-          role: string
-          user_id?: string | null
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          id?: number
-          is_processed?: boolean | null
-          logical_date?: string | null
-          role?: string
-          user_id?: string | null
-        }
-        Relationships: []
       }
       symptom: {
         Row: {

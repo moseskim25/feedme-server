@@ -1,20 +1,11 @@
-import { pool } from "@/lib/db";
 import { supabase } from "@/lib/supabase";
 import { Tables } from "@/types/supabase.types";
-import { getFoodById as getFoodByIdSql } from "@/generated/prisma/sql";
 import { prisma } from "@/lib/prisma";
-
-type FoodWithServings = {
-  id: number;
-  description: string | null;
-  r2_key: string | null;
-  name: string | null;
-  servings: string;
-};
+import { getFoodById as getFoodByIdQuery } from "@/generated/prisma/sql";
 
 const getFoodForUserOnDate = async (
   userId: Tables<"user">["id"],
-  logicalDate: string
+  logicalDate: string,
 ) => {
   const { data, error } = await supabase
     .from("food")
@@ -28,7 +19,7 @@ const getFoodForUserOnDate = async (
   return data;
 };
 
-const deleteFood = async (id: Tables<"food">["id"]) => {
+const deleteFoodEntry = async (id: Tables<"food">["id"]) => {
   const { data, error } = await supabase
     .from("food")
     .update({
@@ -43,11 +34,11 @@ const deleteFood = async (id: Tables<"food">["id"]) => {
   return data;
 };
 
-const getFoodByName = async (food: string) => {
+const getFoodByName = async (foodName: string) => {
   const { data, error } = await supabase
     .from("food")
     .select("*")
-    .eq("description", food)
+    .eq("description", foodName)
     .is("deleted_at", null)
     .not("r2_key", "is", null)
     .order("created_at", { ascending: false })
@@ -58,10 +49,26 @@ const getFoodByName = async (food: string) => {
   return data?.[0] || null;
 };
 
+const getFoodById = async (
+  id: Tables<"food">["id"],
+) => {
+  const { data, error } = await supabase
+    .from("food")
+    .select("id, description, r2_key, logical_date, serving(servings, food_group(name))")
+    .eq("id", id)
+    .is("deleted_at", null)
+    .single();
 
-const getFoodById = async (id: Tables<"food">["id"]): Promise<getFoodByIdSql.Result[]> => {
-  const data = await prisma.$queryRawTyped(getFoodByIdSql(id));
+  if (error) throw error;
+
+  console.log(data)
+
   return data;
 };
 
-export { deleteFood, getFoodForUserOnDate, getFoodByName, getFoodById };
+export {
+  deleteFoodEntry,
+  getFoodForUserOnDate,
+  getFoodByName,
+  getFoodById,
+};
