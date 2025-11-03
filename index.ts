@@ -13,6 +13,7 @@ import {
   messageRouter,
   messageCountRouter,
   foodRouter,
+  foodGroupRouter,
   userRouter,
   userJobRouter,
   transcribeRouter,
@@ -75,6 +76,7 @@ app.use(authMiddleware());
 app.use(messageRouter);
 app.use(messageCountRouter);
 app.use(foodRouter);
+app.use(foodGroupRouter);
 app.use(userRouter);
 app.use(userJobRouter);
 app.use(transcribeRouter);

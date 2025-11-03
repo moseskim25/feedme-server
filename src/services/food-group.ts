@@ -4,7 +4,8 @@ const getAllFoodGroups = async () => {
   const { data, error } = await supabase
     .from("food_group")
     .select("*")
-    .order("name");
+    .order('id', { ascending: true })
+
 
   if (error) {
     throw error;
