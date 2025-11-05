@@ -44,22 +44,23 @@ Output Format:
 `;
 
 export const extractSymptomsPrompt = (message: string) => `
-From the user's message: "${message}", summarize everything related to physical, mental, or emotional health.
+Begin with a concise checklist (any number of bullets) of how you will identify, extract, and summarize all aspects related to physical, mental, or emotional health from the user's message: "${message}".
 
-Guidelines:
-1. Try to summarize and dissect their message concisely but don't remove too many details.
-2. Exclude foods and drink.
-3. Return your response as an array of strings.
-4. Return an empty array if there's nothing to report.
+Requirements:
+1. Provide concise summaries and insights from their message, preserving important details.
+2. Omit any mention of foods or drinks.
+3. Format the output as an array of strings.
+4. If the message contains nothing relevant, return an empty array.
+After extracting summaries, briefly verify that each item addresses only physical, mental, or emotional health and contains no references to foods or drinks; self-correct if necessary.
 
-Examples of what to include:
+Include items such as:
 - "Had a headache this morning"
-- "Feeling really energetic today" 
+- "Feeling really energetic today"
 - "My stools were really great"
 - "Slept poorly last night"
 - "Feeling anxious about work"
-`;
 
+`;
 
 export const generateImageDescriptionPrompt = () => `
 You are an expert food photography prompt generator. Create a detailed visual description optimized for AI image generation.
@@ -101,18 +102,36 @@ Focus on the most impactful improvement, not multiple minor issues. Be specific 
 
 const extractFoodGroupsPrompt = (foodGroups: string) => `
 You are a nutrition analysis assistant for a food tracking app.
-Given a natural language description of a meal, analyze it and:
+Begin with a concise checklist (3-7 bullets) of what you will do; keep items conceptual, not implementation-level.
 
-Identify all food groups present in the meal, choosing only from the following list: 
-${foodGroups}.
+Given a natural language meal description, follow these steps:
+1. Identify all food groups present using only the provided variable list: ${foodGroups}.
+2. Estimate the number of servings for each food group based strictly on explicitly mentioned ingredients. Use fractional servings where appropriate, considering amount and prominence (e.g., don't assign a full vegetable serving for minor ingredients).
 
-Estimate the number of servings for each food group based only on the ingredients explicitly mentioned. Do not infer or assume additional ingredients.
+Key Instructions:
+- Analyze only foods/ingredients explicitly listed in the meal description.
+- Do not infer or assume any missing components, such as sauces, sides, or beverages.
+- Exclude any food group not clearly indicated in the input from the output.
+- Output strictly JSON with no extra text or explanation.
 
-Important Instructions:
-- Only analyze foods explicitly mentioned in the input.
-- Do not infer or assume any missing ingredients (e.g., sauces, sides, drinks).
-- If a food group is not present in the description, omit it from the output.
-- Return JSON only with no extra commentary.
+After generating the JSON output, briefly validate that each outputted food group matches the spelling in ${foodGroups} and that no unmentioned groups are included. If no food groups are identified, ensure the output is an empty JSON object ({}).
+
+# Output Format
+
+Return a JSON object where:
+- Each key is a detected food group (exact spelling as in ${foodGroups}), with its estimated servings as a numerical value (including fractions when relevant).
+- If no food groups are present, return an empty JSON object: {}.
+
+Example:
+{
+"Grains": 1.5,
+"Vegetables": 0.5,
+"Protein": 1
+}
+
+If none are found:
+{}
+
 `;
 
 export { extractFoodGroupsPrompt };

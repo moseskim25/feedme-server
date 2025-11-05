@@ -12,6 +12,7 @@ import {
   generateImage,
   generateImageDescription,
   extractServings,
+  ExtractedServing,
 } from "@/src/services/ai";
 import { insertUserJob, updateUserJob } from "@/src/services/user-job";
 import { insertServings } from "@/src/services/serving";
@@ -44,14 +45,13 @@ const processMessageController = async (
       request.body.message
     );
 
-    
     const foodEntries = await extractFoodFromMessage(insertMessage);
 
     const symptoms = await extractSymptomsFromMessage(request.body.message);
 
     await insertSymptomEntries(userId, logicalDate, symptoms);
 
-    const foodEntryPromises = foodEntries.map(async (foodItem) => {
+    const foodEntryPromises = foodEntries.map(async (foodItem: string) => {
       const existingFoodEntry = await getFoodByName(foodItem);
 
       let description: string;
@@ -59,9 +59,7 @@ const processMessageController = async (
 
       if (existingFoodEntry) {
         description =
-          existingFoodEntry.description ||
-          existingFoodEntry.image_prompt ||
-          "";
+          existingFoodEntry.description || existingFoodEntry.image_prompt || "";
         imageUrl = existingFoodEntry.r2_key!;
       } else {
         description = await generateImageDescription(foodItem);
@@ -82,13 +80,11 @@ const processMessageController = async (
 
       const servings = await extractServings(description);
 
-      console.log(`Servings: ${servings}`);
-
       const allFoodGroups = await getAllFoodGroups();
       const foodGroupMap = new Map(allFoodGroups.map((fg) => [fg.name, fg.id]));
 
       const servingsData = servings
-        .map((serving) => {
+        .map((serving: ExtractedServing) => {
           const foodGroupId = foodGroupMap.get(serving.foodGroup);
           if (!foodGroupId) {
             console.warn(

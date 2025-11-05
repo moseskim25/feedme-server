@@ -13,7 +13,9 @@ import { supabase } from "@/lib/supabase";
 
 export const extractFoodFromMessage = async (message: Tables<"message">) => {
   try {
-    const completion = await openai.responses.parse({
+    const completion = await openai.responses.parse<{
+      foods: string[];
+    }>({
       model: "gpt-4o",
       input: [
         {
@@ -32,7 +34,6 @@ export const extractFoodFromMessage = async (message: Tables<"message">) => {
     });
 
     const content = completion.output_parsed;
-    console.log(content);
 
     if (!content) {
       throw new Error("No content received from OpenAI");
@@ -48,7 +49,9 @@ export const extractFoodFromMessage = async (message: Tables<"message">) => {
 };
 
 export const extractSymptomsFromMessage = async (message: string) => {
-  const completion = await openai.responses.parse({
+  const completion = await openai.responses.parse<{
+    symptoms: string[];
+  }>({
     model: "gpt-4o",
     input: [{ role: "user", content: extractSymptomsPrompt(message) }],
     text: {
@@ -62,7 +65,6 @@ export const extractSymptomsFromMessage = async (message: string) => {
   });
 
   const content = completion.output_parsed;
-  console.log(content);
 
   if (!content) {
     throw new Error("No content received from OpenAI");
@@ -166,7 +168,14 @@ const extractFoodGroupsFormat = zodTextFormat(
   "servings"
 );
 
-const extractServings = async (foodDescription: string) => {
+export type ExtractedServing = {
+  foodGroup: string;
+  servings: number;
+};
+
+const extractServings = async (
+  foodDescription: string
+): Promise<ExtractedServing[]> => {
   const { data: foodGroups, error } = await supabase
     .from("food_group")
     .select("name, description");
@@ -177,7 +186,9 @@ const extractServings = async (foodDescription: string) => {
     ?.map((foodGroup) => `${foodGroup.name}: ${foodGroup.description}`)
     .join("\n");
 
-  const completion = await openai.responses.parse({
+  const completion = await openai.responses.parse<{
+    servings: ExtractedServing[];
+  }>({
     model: "gpt-4o",
     input: [
       {
@@ -195,8 +206,6 @@ const extractServings = async (foodDescription: string) => {
   });
 
   const content = completion.output_parsed;
-
-  console.log(content);
 
   if (!content) throw new Error("No content received from OpenAI");
 

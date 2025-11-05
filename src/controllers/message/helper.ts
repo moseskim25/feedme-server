@@ -1,13 +1,18 @@
 import { uploadToR2 } from "@/lib/r2";
 import { Tables, TablesUpdate } from "@/types/supabase.types";
-import { ImagesResponse } from "openai/resources/images";
 import { supabase } from "@/lib/supabase";
+
+type GeneratedImage = {
+  data?: Array<{
+    b64_json?: string;
+    url?: string;
+  }>;
+  _request_id?: string | null;
+};
 
 export const uploadImageToR2 = async (
   filename: string,
-  image: ImagesResponse & {
-    _request_id?: string | null;
-  }
+  image: GeneratedImage
 ) => {
   if (!image.data) {
     throw new Error("No image data received from OpenAI");

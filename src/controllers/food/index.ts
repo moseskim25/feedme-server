@@ -11,6 +11,7 @@ type FoodDay = {
     id: number;
   }[];
   symptoms: {
+    id: number;
     description: string;
   }[];
   food_groups: Array<{
@@ -84,7 +85,7 @@ const foodController = async (req: Request, res: Response<FoodResponse>) => {
         GROUP BY logical_date
       ),
       symptom_data AS (
-        SELECT logical_date, json_agg(json_build_object('description', description)) as symptoms
+        SELECT logical_date, json_agg(json_build_object('id', id, 'description', description)) as symptoms
         FROM symptom
         JOIN all_dates USING (logical_date)
         WHERE user_id = $1

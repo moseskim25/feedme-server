@@ -6,7 +6,10 @@ export const transcribeController = async (req: Request, res: Response) => {
     if (!req.file)
       return res.status(400).json({ error: "No audio file provided" });
 
-    const file = new File([req.file.buffer], req.file.originalname, {
+    const arrayBuffer = new ArrayBuffer(req.file.buffer.byteLength);
+    new Uint8Array(arrayBuffer).set(req.file.buffer);
+
+    const file = new File([arrayBuffer], req.file.originalname, {
       type: req.file.mimetype,
     });
 
