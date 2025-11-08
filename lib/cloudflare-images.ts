@@ -66,7 +66,7 @@ export const uploadToCloudflareImages = async (
   const uploadFileName = `${sanitizedId ?? `generated-${Date.now()}`}.png`;
   const file = await toFile(buffer, uploadFileName, { type: "image/png" });
 
-  console.log("Uploading image to Cloudflare Images");
+
   
   const response = await client.images.v1.create({
     account_id: accountId,
@@ -74,7 +74,7 @@ export const uploadToCloudflareImages = async (
     ...(sanitizedId ? { id: sanitizedId } : {}),
   });
 
-  console.log("Response:", response);
+
 
   if (!response?.id) {
     throw new Error("Failed to upload image to Cloudflare Images");
