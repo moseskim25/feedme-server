@@ -4,7 +4,7 @@ import { getCountOfMessagesForUserForToday } from "@/src/services/message";
 const messageCountController = async (req: Request, res: Response) => {
   try {
     const userId = req.userId as string;
-    const { id } = req.params;
+
 
     const countOfMessagesForUserForToday =
       await getCountOfMessagesForUserForToday(userId);
