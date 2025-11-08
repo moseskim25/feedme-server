@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import {
-  uploadImageToR2,
+  uploadImageToCloudflare,
   insertFoodEntry,
   insertSymptomEntries,
   updateMessageProcessedStatus,
@@ -64,8 +64,10 @@ const processMessageController = async (
       } else {
         description = await generateImageDescription(foodItem);
         const image = await generateImage(description);
-        imageUrl = `food/${foodItem.replace(/ /g, "-").toLowerCase()}.png`;
-        await uploadImageToR2(imageUrl, image);
+        const filename = `food-${foodItem
+          .replace(/ /g, "-")
+          .toLowerCase()}.png`;
+        imageUrl = await uploadImageToCloudflare(filename, image);
       }
 
       console.log(`Description: ${description}`);

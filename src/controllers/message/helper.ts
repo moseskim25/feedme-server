@@ -1,4 +1,4 @@
-import { uploadToR2 } from "@/lib/r2";
+import { uploadToCloudflareImages } from "@/lib/cloudflare-images";
 import { Tables, TablesUpdate } from "@/types/supabase.types";
 import { supabase } from "@/lib/supabase";
 
@@ -10,10 +10,10 @@ type GeneratedImage = {
   _request_id?: string | null;
 };
 
-export const uploadImageToR2 = async (
+export const uploadImageToCloudflare = async (
   filename: string,
   image: GeneratedImage
-) => {
+): Promise<string> => {
   if (!image.data) {
     throw new Error("No image data received from OpenAI");
   }
@@ -21,12 +21,14 @@ export const uploadImageToR2 = async (
   const imageBase64 = image.data[0].b64_json;
 
   if (!imageBase64) {
-    throw new Error("Error uploading image to R2");
+    throw new Error("Error preparing image for Cloudflare");
   }
 
   const imageBytes = Buffer.from(imageBase64, "base64");
 
-  await uploadToR2(imageBytes, filename);
+  const uploadedImage = await uploadToCloudflareImages(imageBytes, filename);
+
+  return uploadedImage.deliveryUrl ?? uploadedImage.id;
 };
 
 export const recordMessageInSupabase = async (
