@@ -1,4 +1,6 @@
 import "module-alias/register";
+import * as Sentry from "@sentry/node";
+import { expressIntegration, expressErrorHandler } from "@sentry/node";
 import { setupGracefulShutdown } from "./lib/db-shutdown";
 import express from "express";
 import "dotenv/config";
@@ -28,6 +30,15 @@ declare global {
     }
   }
 }
+
+// Initialize Sentry
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  environment: process.env.NODE_ENV || "development",
+  tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
+  profilesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
+  integrations: [expressIntegration()],
+});
 
 const app = express();
 
@@ -80,6 +91,22 @@ app.use(foodGroupRouter);
 app.use(userRouter);
 app.use(userJobRouter);
 app.use(transcribeRouter);
+
+// Sentry error handler must be before other error middleware and after all controllers
+app.use(expressErrorHandler());
+
+// Optional fallthrough error handler
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  logger.error(err, "Unhandled error");
+  
+  const errorId = Sentry.lastEventId();
+  
+  res.status(500).json({
+    error: "Internal server error",
+    ...(process.env.NODE_ENV === "development" && { message: err.message }),
+    ...(errorId && { errorId }),
+  });
+});
 
 const PORT = Number(process.env.PORT) || 3001;
 
