@@ -183,8 +183,8 @@ const extractServings = async (
   if (error) throw error;
 
   const foodGroupsForPrompt = foodGroups
-    ?.map((foodGroup) => `${foodGroup.name}: ${foodGroup.description}`)
-    .join("\n");
+    ?.map((foodGroup) => `${foodGroup.name}`)
+    .join(",");
 
   const completion = await openai.responses.parse<{
     servings: ExtractedServing[];

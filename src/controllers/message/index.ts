@@ -80,7 +80,7 @@ const processMessageController = async (
         imageUrl
       );
 
-      const servings = await extractServings(description);
+      const servings = await extractServings(foodItem);
 
       const allFoodGroups = await getAllFoodGroups();
       const foodGroupMap = new Map(allFoodGroups.map((fg) => [fg.name, fg.id]));

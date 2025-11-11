@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { Request, Response } from "express";
-import { createUser } from "@/src/services/user";
+import { createUser, deleteUserAccount } from "@/src/services/user";
 
 const createUserController = async (req: Request, res: Response) => {
   try {
@@ -30,4 +30,26 @@ const createUserController = async (req: Request, res: Response) => {
   }
 };
 
-export { createUserController };
+const deleteUserController = async (req: Request, res: Response) => {
+  try {
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized: Missing user id" });
+    }
+
+    const result = await deleteUserAccount(userId);
+
+    if (!result.success && result.reason === "not_found") {
+      console.error("User not found");
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    return res.status(200).json({ message: "User deleted successfully" });
+  } catch (error) {
+    console.error("Failed to delete user:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export { createUserController, deleteUserController };
