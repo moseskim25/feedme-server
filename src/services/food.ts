@@ -51,7 +51,9 @@ const getFoodById = async (
 ) => {
   const { data, error } = await supabase
     .from("food")
-    .select("id, description, r2_key, logical_date, serving(servings, food_group(name))")
+    .select(
+      "id, description, r2_key, logical_date, serving(id, servings, food_group(id, name))"
+    )
     .eq("id", id)
     .is("deleted_at", null)
     .single();
@@ -63,9 +65,27 @@ const getFoodById = async (
   return data;
 };
 
+const isFoodOwnedByUser = async (
+  foodId: Tables<"food">["id"],
+  userId: Tables<"food">["user_id"],
+) => {
+  const { data, error } = await supabase
+    .from("food")
+    .select("id")
+    .eq("id", foodId)
+    .eq("user_id", userId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  return Boolean(data);
+};
+
 export {
   deleteFoodEntry,
   getFoodForUserOnDate,
   getFoodByName,
   getFoodById,
+  isFoodOwnedByUser,
 };

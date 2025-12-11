@@ -31,6 +31,14 @@ export const uploadImageToCloudflare = async (
   return uploadedImage.deliveryUrl ?? uploadedImage.id;
 };
 
+export const uploadBufferToCloudflare = async (
+  filename: string,
+  buffer: Buffer
+): Promise<string> => {
+  const uploadedImage = await uploadToCloudflareImages(buffer, filename);
+  return uploadedImage.deliveryUrl ?? uploadedImage.id;
+};
+
 export const recordMessageInSupabase = async (
   userId: string,
   logicalDate: string,
@@ -100,7 +108,6 @@ export const insertFoodEntry = async (
     .single();
 
   if (insertFood.error) {
-    console.error(`Failed to insert food entry: ${JSON.stringify(insertFood)}`);
     throw new Error(
       `Failed to insert food entry: ${JSON.stringify(insertFood)}`
     );

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import {
-  uploadImageToCloudflare,
+  uploadBufferToCloudflare,
   insertFoodEntry,
   insertSymptomEntries,
   updateMessageProcessedStatus,
@@ -9,8 +9,7 @@ import {
 import {
   extractFoodFromMessage,
   extractSymptomsFromMessage,
-  generateImage,
-  generateImageDescription,
+  generateImageUsingNanoBanana,
   extractServings,
   ExtractedServing,
 } from "@/src/services/ai";
@@ -29,58 +28,72 @@ const processMessageController = async (
   request: Request<{}, {}, ProcessMessageBody>,
   response: Response
 ) => {
+  const overallStart = Date.now();
   try {
     const userId = getUserIdFromRequest(request);
+    const logicalDate = request.body.logicalDate;
 
+    // Create user job
+    let sectionStart = Date.now();
     const userJob = await insertUserJob({
       user_id: userId,
       description: "processing message",
     });
+    console.log(`[TIMING] Create user job: ${Date.now() - sectionStart}ms`);
 
-    const logicalDate = request.body.logicalDate;
-
+    // Record message
+    sectionStart = Date.now();
     const insertMessage = await recordMessageInSupabase(
       userId,
       logicalDate,
       request.body.message
     );
+    console.log(`[TIMING] Record message: ${Date.now() - sectionStart}ms`);
 
-    const foodEntries = await extractFoodFromMessage(insertMessage);
+    // Extract food entries and symptoms in parallel
+    sectionStart = Date.now();
+    const [foodEntries, symptoms] = await Promise.all([
+      extractFoodFromMessage(insertMessage),
+      extractSymptomsFromMessage(request.body.message),
+    ]);
+    console.log(`[TIMING] Extract food & symptoms: ${Date.now() - sectionStart}ms`);
 
-    const symptoms = await extractSymptomsFromMessage(request.body.message);
-
+    // Insert symptoms
+    sectionStart = Date.now();
     await insertSymptomEntries(userId, logicalDate, symptoms);
+    console.log(`[TIMING] Insert symptoms: ${Date.now() - sectionStart}ms`);
 
+    // Process all food entries
+    sectionStart = Date.now();
     const foodEntryPromises = foodEntries.map(async (foodItem: string) => {
       const existingFoodEntry = await getFoodByName(foodItem);
 
-      let description: string;
-      let imageUrl: string;
+      // Helper to get or generate image URL
+      const getImageUrl = async () => {
+        if (existingFoodEntry) {
+          return existingFoodEntry.r2_key!;
+        }
 
-      if (existingFoodEntry) {
-        description =
-          existingFoodEntry.description || existingFoodEntry.image_prompt || "";
-        imageUrl = existingFoodEntry.r2_key!;
-      } else {
-        description = await generateImageDescription(foodItem);
-        const image = await generateImage(description);
-        const filename = `food-${foodItem
-          .replace(/ /g, "-")
-          .toLowerCase()}.png`;
-        imageUrl = await uploadImageToCloudflare(filename, image);
-      }
+        const imageBuffer = await generateImageUsingNanoBanana(
+          `${foodItem}, white background, centered composition.`
+        );
+        const filename = `food-${foodItem.replace(/ /g, "-").toLowerCase()}.png`;
+        return await uploadBufferToCloudflare(filename, imageBuffer);
+      };
 
-      console.log(`Description: ${description}`);
+      // Run image generation and servings extraction in parallel
+      const [imageUrl, servings] = await Promise.all([
+        getImageUrl(),
+        extractServings(foodItem)
+      ]);
 
       const foodEntry = await insertFoodEntry(
         userId,
         logicalDate,
         foodItem,
-        description,
+        foodItem, // Use foodItem as the image_prompt
         imageUrl
       );
-
-      const servings = await extractServings(foodItem);
 
       const allFoodGroups = await getAllFoodGroups();
       const foodGroupMap = new Map(allFoodGroups.map((fg) => [fg.name, fg.id]));
@@ -89,9 +102,6 @@ const processMessageController = async (
         .map((serving: ExtractedServing) => {
           const foodGroupId = foodGroupMap.get(serving.foodGroup);
           if (!foodGroupId) {
-            console.warn(
-              `Food group '${serving.foodGroup}' not found in database`
-            );
             return null;
           }
           return {
@@ -110,16 +120,26 @@ const processMessageController = async (
     });
 
     await Promise.all(foodEntryPromises);
+    console.log(`[TIMING] Process all food entries: ${Date.now() - sectionStart}ms`);
 
+    // Update message status
+    sectionStart = Date.now();
     await updateMessageProcessedStatus(insertMessage.id);
+    console.log(`[TIMING] Update message status: ${Date.now() - sectionStart}ms`);
 
+    // Complete user job
+    sectionStart = Date.now();
     await updateUserJob(userJob.id, {
       completed_at: new Date().toISOString(),
     });
+    console.log(`[TIMING] Complete user job: ${Date.now() - sectionStart}ms`);
 
+    const totalTime = Date.now() - overallStart;
+    console.log(`[TIMING] ===== TOTAL: ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s) =====`);
     return response.status(200).json({ success: true });
   } catch (error) {
-    console.error(error);
+    const totalTime = Date.now() - overallStart;
+    console.error(`[TIMING] Error after ${totalTime}ms:`, error);
     return response.status(500).json({ error: "Internal server error" });
   }
 };

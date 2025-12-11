@@ -1,6 +1,10 @@
 import { pool } from "@/lib/db";
-import { deleteFoodEntry, getFoodById } from "@/src/services/food";
-import { generateFeedback } from "@/src/services/feedback";
+import {
+  deleteFoodEntry,
+  getFoodById,
+  isFoodOwnedByUser,
+} from "@/src/services/food";
+import { upsertServingForFood } from "@/src/services/serving";
 import { getUserIdFromRequest } from "@/src/utils/auth";
 import { Request, Response } from "express";
 
@@ -127,12 +131,9 @@ const foodController = async (req: Request, res: Response<FoodResponse>) => {
 
 const deleteFoodEntryController = async (req: Request, res: Response) => {
   try {
-    const userId = req.userId as string;
     const { id } = req.params;
 
-    const deletedFoodEntry = await deleteFoodEntry(Number.parseInt(id, 10));
-
-    await generateFeedback(userId, deletedFoodEntry.logical_date);
+    await deleteFoodEntry(Number.parseInt(id, 10));
 
     res.status(200).json({ message: "Food entry deleted" });
   } catch (err) {
@@ -158,4 +159,55 @@ const getFoodByIdController = async (req: Request, res: Response) => {
   }
 };
 
-export { foodController, deleteFoodEntryController, getFoodByIdController };
+const updateFoodServingController = async (
+  req: Request<{ id: string }, {}, { food_group_id: number; servings: number }>,
+  res: Response
+) => {
+  try {
+    const userId = getUserIdFromRequest(req);
+    const foodId = Number(req.params.id);
+    const foodGroupId = Number(req.body.food_group_id);
+    const servings = Number(req.body.servings);
+
+    if (!Number.isFinite(foodId)) {
+      return res.status(400).json({ message: "Invalid food id" });
+    }
+
+    if (!Number.isFinite(foodGroupId)) {
+      return res.status(400).json({ message: "Invalid food group id" });
+    }
+
+    if (!Number.isFinite(servings)) {
+      return res.status(400).json({ message: "Invalid servings value" });
+    }
+
+    const ownsFood = await isFoodOwnedByUser(foodId, userId);
+
+    if (!ownsFood) {
+      return res.status(404).json({ message: "Food entry not found" });
+    }
+
+    const updatedServing = await upsertServingForFood({
+      userId,
+      foodId,
+      foodGroupId,
+      servings,
+    });
+
+    return res.status(200).json({
+      food_id: foodId,
+      food_group_id: foodGroupId,
+      servings: updatedServing?.servings ?? 0,
+    });
+  } catch (err) {
+    console.error("Error in updateFoodServingController:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export {
+  foodController,
+  deleteFoodEntryController,
+  getFoodByIdController,
+  updateFoodServingController,
+};
